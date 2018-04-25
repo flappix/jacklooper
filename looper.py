@@ -6,17 +6,27 @@ import random
 import copy
 import numpy
 
+bpm = None
+quantize = 1
+tick_diff = None
+frames_per_quant = None
+
 class Loop:
 	samples = []
 	curr_sample = -1
 	start_tick = -1
 	state = 'empty' # empty, record, play
+	length = 0
 
 	def setData (self, data):
 		self.samples.append ( copy.deepcopy (data) )
 	
-	def setStartTick (self, tick):
-		self.start_tick = tick
+
+	def calc_start_tick (self, pos):
+		if pos['tick'] % tick_diff < tick_diff / 2:
+			self.start_tick = tick_diff * ( int (pos['tick'] / tick_diff) % quantize )
+		else:
+			self.start_tick = tick_diff * ( math.ceil (pos['tick'] / tick_diff) % quantize )
 	
 	def getData (self):
 		if self.samples != None:
@@ -28,6 +38,18 @@ class Loop:
 		
 		return None
 	
+	def computeLength (self, frames):
+		if self.state == 'record':
+			print ('WARNING: compute loop length, but recording is not finished')
+		
+		self.length = frames * len (self.samples)
+	
+	def resize (self):
+		print ('frames per quant: ' + str(frames_per_quant)) # 124
+		print ('size: ' + str (self.length)) # 111
+		
+		print ('new size: ' + str (
+	
 
 
 loops = 8
@@ -38,18 +60,13 @@ playback = False
 
 record_treshhold = 0.1
 
-bpm = -1
-quantize = 1
-fields = []
-tick_diff = -1
-
 jack_client = jack.Client('Looper')
 outports = [jack_client.outports.register ("out" + str(i)) for i in range (loops)]
 inport = jack_client.inports.register ("in")
 
 @jack_client.set_process_callback
-def process(frames):
-	print(frames)
+def process (frames):
+
 	global loop
 	global curr_loop
 	
@@ -62,9 +79,7 @@ def process(frames):
 		if record:
 			b = inport.get_array()
 			if loop[curr_loop].state != 'record' and max(b) > record_treshhold:
-				adj_tick = calc_start_tick (pos)
-				print(adj_tick)
-				loop[curr_loop].setStartTick (adj_tick)
+				loop[curr_loop].calc_start_tick (pos)
 				loop[curr_loop].state = 'record'
 			
 			if loop[curr_loop].state == 'record':
@@ -81,44 +96,17 @@ def process(frames):
 def calc_sync_settings (pos):
 	global bpm
 	global tick_diff
+	global frames_per_quant
 	
-	fields = [ i * pos['ticks_per_beat'] / quantize for i in range (0, quantize) ]
 	bpm = pos['beats_per_minute']
 	tick_diff = pos['ticks_per_beat'] / quantize
 	if int(tick_diff) != tick_diff:
 		print ('WARNING: ticks_per_beat (' + str(pos['ticks_per_beat']) + ') cannot be devided by quantize (' + str(quantize) + ')')
 	
 	tick_diff = int(tick_diff)
+	frames_per_quant =  (client.samplerate * 60 / bpm) / quantize
 	
-def calc_start_tick (pos):
-	print(pos['tick'])
-	print(tick_diff)
-	print(quantize)
-	
-	if pos['tick'] % tick_diff < tick_diff / 2:
-		return tick_diff * ( int (pos['tick'] / tick_diff) % quantize )
-	else:
-		return tick_diff * ( math.ceil (pos['tick'] / tick_diff) % quantize )
-	#
-	#x = pos['tick'] / tick_diff
-	#return tick_diff * ( ( int (x) if pos['tick'] % tick_diff < tick_diff / 2 else math.ceil (x) ) % quantize )
-	
-	#pos['tick'] % (pos['ticks_per_bar'] / quantize)
-	
-	#for i in range (len(fields)):
-	#	if pos['tick'] <= fields[i]:
-	#		if fields[i] - pos['tick'] < tick_diff / 2:
-	#			return fields[i]
-	#		else:
-	#			return fields[i-1]
-	
-	# current tick is greater then the last field entry
-	#if pos['tick'] - fields[-1] < tick_diff / 2:
-	#	return fields[-1]
-	#else:
-	#	return 0
 
-#def resize_sample():
 	
 			
 with jack_client:
