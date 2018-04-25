@@ -1,0 +1,142 @@
+<!DOCTYPE patchbay>
+<patchbay name="patchbay" version="0.5.0">
+ <output-sockets>
+  <socket type="jack-audio" name="system" client="system" exclusive="off">
+   <plug>capture_1</plug>
+   <plug>capture_2</plug>
+  </socket>
+  <socket type="jack-audio" name="Hydrogen" client="Hydrogen" exclusive="off">
+   <plug>out_L</plug>
+   <plug>out_R</plug>
+   <plug>Track_1_Crash Jazz_Main_L</plug>
+   <plug>Track_1_Crash Jazz_Main_R</plug>
+   <plug>Track_2_Ride Rock_Main_L</plug>
+   <plug>Track_2_Ride Rock_Main_R</plug>
+   <plug>Track_3_Crash_Main_L</plug>
+   <plug>Track_3_Crash_Main_R</plug>
+   <plug>Track_4_Ride Jazz_Main_L</plug>
+   <plug>Track_4_Ride Jazz_Main_R</plug>
+   <plug>Track_5_Cowbell_Main_L</plug>
+   <plug>Track_5_Cowbell_Main_R</plug>
+   <plug>Track_6_Open HH_Main_L</plug>
+   <plug>Track_6_Open HH_Main_R</plug>
+   <plug>Track_7_Tom Hi_Main_L</plug>
+   <plug>Track_7_Tom Hi_Main_R</plug>
+   <plug>Track_8_Pedal HH_Main_L</plug>
+   <plug>Track_8_Pedal HH_Main_R</plug>
+   <plug>Track_9_Tom Mid_Main_L</plug>
+   <plug>Track_9_Tom Mid_Main_R</plug>
+   <plug>Track_10_Closed HH_Main_L</plug>
+   <plug>Track_10_Closed HH_Main_R</plug>
+   <plug>Track_11_Tom Low_Main_L</plug>
+   <plug>Track_11_Tom Low_Main_R</plug>
+   <plug>Track_12_Snare Rock_Main_L</plug>
+   <plug>Track_12_Snare Rock_Main_R</plug>
+   <plug>Track_13_Hand Clap_Main_L</plug>
+   <plug>Track_13_Hand Clap_Main_R</plug>
+   <plug>Track_14_Snare Jazz_Main_L</plug>
+   <plug>Track_14_Snare Jazz_Main_R</plug>
+   <plug>Track_15_Stick_Main_L</plug>
+   <plug>Track_15_Stick_Main_R</plug>
+   <plug>Track_16_Kick_Main_L</plug>
+   <plug>Track_16_Kick_Main_R</plug>
+  </socket>
+  <socket type="jack-audio" name="amsynth" client="amsynth" exclusive="off">
+   <plug>L out</plug>
+   <plug>R out</plug>
+  </socket>
+  <socket type="jack-audio" name="Looper" client="Looper" exclusive="off">
+   <plug>out0</plug>
+   <plug>out1</plug>
+   <plug>out2</plug>
+   <plug>out3</plug>
+   <plug>out4</plug>
+   <plug>out5</plug>
+   <plug>out6</plug>
+   <plug>out7</plug>
+  </socket>
+  <socket type="jack-audio" name="Looper 2" client="Looper" exclusive="off">
+   <plug>out0</plug>
+   <plug>out0</plug>
+   <plug>out1</plug>
+   <plug>out1</plug>
+   <plug>out2</plug>
+   <plug>out2</plug>
+   <plug>out3</plug>
+   <plug>out3</plug>
+   <plug>out4</plug>
+   <plug>out4</plug>
+   <plug>out5</plug>
+   <plug>out5</plug>
+   <plug>out6</plug>
+   <plug>out6</plug>
+   <plug>out7</plug>
+   <plug>out7</plug>
+  </socket>
+  <socket type="jack-midi" name="amsynth" client="amsynth" exclusive="off">
+   <plug>midi_out</plug>
+  </socket>
+  <socket type="alsa-midi" name="Midi Through" client="Midi Through" exclusive="off">
+   <plug>Midi Through Port-0</plug>
+  </socket>
+  <socket type="alsa-midi" name="amsynth" client="amsynth" exclusive="off">
+   <plug>MIDI OUT</plug>
+  </socket>
+  <socket type="alsa-midi" name="Hydrogen" client="Hydrogen" exclusive="off">
+   <plug>Hydrogen Midi-Out</plug>
+  </socket>
+ </output-sockets>
+ <input-sockets>
+  <socket type="jack-audio" name="system" client="system" exclusive="off">
+   <plug>playback_1</plug>
+   <plug>playback_2</plug>
+   <plug>playback_3</plug>
+   <plug>playback_4</plug>
+   <plug>playback_5</plug>
+   <plug>playback_6</plug>
+   <plug>playback_7</plug>
+   <plug>playback_8</plug>
+  </socket>
+  <socket type="jack-audio" name="Looper" client="Looper" exclusive="off">
+   <plug>in</plug>
+  </socket>
+  <socket type="jack-audio" name="system 2" client="system" exclusive="off">
+   <plug>playback_1</plug>
+   <plug>playback_2</plug>
+   <plug>playback_1</plug>
+   <plug>playback_2</plug>
+   <plug>playback_1</plug>
+   <plug>playback_2</plug>
+   <plug>playback_1</plug>
+   <plug>playback_2</plug>
+   <plug>playback_1</plug>
+   <plug>playback_2</plug>
+   <plug>playback_1</plug>
+   <plug>playback_2</plug>
+   <plug>playback_1</plug>
+   <plug>playback_2</plug>
+   <plug>playback_1</plug>
+   <plug>playback_2</plug>
+  </socket>
+  <socket type="jack-midi" name="amsynth" client="amsynth" exclusive="off">
+   <plug>midi_in</plug>
+  </socket>
+  <socket type="alsa-midi" name="Midi Through" client="Midi Through" exclusive="off">
+   <plug>Midi Through Port-0</plug>
+  </socket>
+  <socket type="alsa-midi" name="amsynth" client="amsynth" exclusive="off">
+   <plug>MIDI IN</plug>
+  </socket>
+  <socket type="alsa-midi" name="Hydrogen" client="Hydrogen" exclusive="off">
+   <plug>Hydrogen Midi-In</plug>
+  </socket>
+ </input-sockets>
+ <slots/>
+ <cables>
+  <cable output="Hydrogen" type="jack-audio" input="system"/>
+  <cable output="amsynth" type="jack-audio" input="system"/>
+  <cable output="amsynth" type="jack-audio" input="Looper"/>
+  <cable output="Looper 2" type="jack-audio" input="system 2"/>
+ </cables>
+</patchbay>
+
