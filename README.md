@@ -1,2 +1,2 @@
 # jacklooper
-Audio looper without GUI, controllable via MIDI, synchronized by a jack time base master
+Headless audio looper, controllable via MIDI. Under development.
