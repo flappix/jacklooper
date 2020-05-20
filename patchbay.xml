@@ -1,11 +1,21 @@
 <!DOCTYPE patchbay>
-<patchbay name="patchbay" version="0.5.0">
+<patchbay name="patchbay" version="0.6.1">
  <output-sockets>
-  <socket type="jack-audio" name="system" client="system" exclusive="off">
+  <socket name="system" exclusive="off" type="jack-audio" client="system">
    <plug>capture_1</plug>
    <plug>capture_2</plug>
   </socket>
-  <socket type="jack-audio" name="Hydrogen" client="Hydrogen" exclusive="off">
+  <socket name="Looper" exclusive="off" type="jack-audio" client="Looper">
+   <plug>out0</plug>
+   <plug>out1</plug>
+   <plug>out2</plug>
+   <plug>out3</plug>
+   <plug>out4</plug>
+   <plug>out5</plug>
+   <plug>out6</plug>
+   <plug>out7</plug>
+  </socket>
+  <socket name="Hydrogen" exclusive="off" type="jack-audio" client="Hydrogen">
    <plug>out_L</plug>
    <plug>out_R</plug>
    <plug>Track_1_Crash Jazz_Main_L</plug>
@@ -41,21 +51,7 @@
    <plug>Track_16_Kick_Main_L</plug>
    <plug>Track_16_Kick_Main_R</plug>
   </socket>
-  <socket type="jack-audio" name="amsynth" client="amsynth" exclusive="off">
-   <plug>L out</plug>
-   <plug>R out</plug>
-  </socket>
-  <socket type="jack-audio" name="Looper" client="Looper" exclusive="off">
-   <plug>out0</plug>
-   <plug>out1</plug>
-   <plug>out2</plug>
-   <plug>out3</plug>
-   <plug>out4</plug>
-   <plug>out5</plug>
-   <plug>out6</plug>
-   <plug>out7</plug>
-  </socket>
-  <socket type="jack-audio" name="Looper 2" client="Looper" exclusive="off">
+  <socket name="Looper 2" exclusive="off" type="jack-audio" client="Looper">
    <plug>out0</plug>
    <plug>out0</plug>
    <plug>out1</plug>
@@ -73,34 +69,24 @@
    <plug>out7</plug>
    <plug>out7</plug>
   </socket>
-  <socket type="jack-midi" name="amsynth" client="amsynth" exclusive="off">
-   <plug>midi_out</plug>
+  <socket name="hydrogen-midi" exclusive="off" type="jack-midi" client="hydrogen-midi">
+   <plug>TX</plug>
   </socket>
-  <socket type="alsa-midi" name="Midi Through" client="Midi Through" exclusive="off">
+  <socket name="Midi Through" exclusive="off" type="alsa-midi" client="Midi Through">
    <plug>Midi Through Port-0</plug>
-  </socket>
-  <socket type="alsa-midi" name="amsynth" client="amsynth" exclusive="off">
-   <plug>MIDI OUT</plug>
-  </socket>
-  <socket type="alsa-midi" name="Hydrogen" client="Hydrogen" exclusive="off">
-   <plug>Hydrogen Midi-Out</plug>
   </socket>
  </output-sockets>
  <input-sockets>
-  <socket type="jack-audio" name="system" client="system" exclusive="off">
+  <socket name="system" exclusive="off" type="jack-audio" client="system">
    <plug>playback_1</plug>
    <plug>playback_2</plug>
    <plug>playback_3</plug>
    <plug>playback_4</plug>
-   <plug>playback_5</plug>
-   <plug>playback_6</plug>
-   <plug>playback_7</plug>
-   <plug>playback_8</plug>
   </socket>
-  <socket type="jack-audio" name="Looper" client="Looper" exclusive="off">
+  <socket name="Looper" exclusive="off" type="jack-audio" client="Looper">
    <plug>in</plug>
   </socket>
-  <socket type="jack-audio" name="system 2" client="system" exclusive="off">
+  <socket name="system 2" exclusive="off" type="jack-audio" client="system">
    <plug>playback_1</plug>
    <plug>playback_2</plug>
    <plug>playback_1</plug>
@@ -118,25 +104,20 @@
    <plug>playback_1</plug>
    <plug>playback_2</plug>
   </socket>
-  <socket type="jack-midi" name="amsynth" client="amsynth" exclusive="off">
-   <plug>midi_in</plug>
+  <socket name="hydrogen-midi" exclusive="off" type="jack-midi" client="hydrogen-midi">
+   <plug>RX</plug>
   </socket>
-  <socket type="alsa-midi" name="Midi Through" client="Midi Through" exclusive="off">
+  <socket name="Midi Through" exclusive="off" type="alsa-midi" client="Midi Through">
    <plug>Midi Through Port-0</plug>
-  </socket>
-  <socket type="alsa-midi" name="amsynth" client="amsynth" exclusive="off">
-   <plug>MIDI IN</plug>
-  </socket>
-  <socket type="alsa-midi" name="Hydrogen" client="Hydrogen" exclusive="off">
-   <plug>Hydrogen Midi-In</plug>
   </socket>
  </input-sockets>
  <slots/>
  <cables>
-  <cable output="Hydrogen" type="jack-audio" input="system"/>
-  <cable output="amsynth" type="jack-audio" input="system"/>
-  <cable output="amsynth" type="jack-audio" input="Looper"/>
-  <cable output="Looper 2" type="jack-audio" input="system 2"/>
+  <cable input="Looper" output="system" type="jack-audio"/>
+  <cable input="system" output="system" type="jack-audio"/>
+  <cable input="system" output="Looper" type="jack-audio"/>
+  <cable input="system" output="Hydrogen" type="jack-audio"/>
+  <cable input="system 2" output="Looper 2" type="jack-audio"/>
  </cables>
 </patchbay>
 

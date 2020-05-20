@@ -5,118 +5,151 @@ import math
 import random
 import copy
 import numpy
-
-bpm = None
-quantize = 1
-tick_diff = None
-frames_per_quant = None
+from decimal import Decimal
 
 class Loop:
-	samples = []
-	curr_sample = -1
-	start_tick = -1
-	state = 'empty' # empty, record, play
-	length = 0
+	def __init__(self, _name, jack_client, _sync_loop):
+		self.name = _name
+		self.samples = []
+		self.curr_sample = -1
+		self.outport = jack_client.outports.register ( "out" + str (self.name) )
+		self.sync_loop = _sync_loop
+		self.sync_samples = []
+		self.state = 'empty' # empty, record, play
+		self.isPlaying = False
+			
 
-	def setData (self, data):
-		self.samples.append ( copy.deepcopy (data) )
-	
-
-	def calc_start_tick (self, pos):
-		if pos['tick'] % tick_diff < tick_diff / 2:
-			self.start_tick = tick_diff * ( int (pos['tick'] / tick_diff) % quantize )
+	def setData (self, data, pos=None):
+		if pos == None:
+			self.samples.append ( copy.deepcopy (data) )
 		else:
-			self.start_tick = tick_diff * ( math.ceil (pos['tick'] / tick_diff) % quantize )
+			self.samples[pos] = data;
 	
-	def getData (self):
+	def getData (self, frames):
 		if self.samples != None:
-			#print (len(self.samples))
-			#print(len(self.samples))
-			#print(self.curr_sample)
-			self.curr_sample = (self.curr_sample + 1) % len(self.samples)
 			return self.samples[self.curr_sample]
 		
-		return None
+		return [0] * frames
 	
-	def computeLength (self, frames):
-		if self.state == 'record':
-			print ('WARNING: compute loop length, but recording is not finished')
+	def nextSample (self):
+		self.curr_sample = (self.curr_sample + 1) % len (self.samples)
+		return self.curr_sample == 0
 		
-		self.length = frames * len (self.samples)
-	
-	def resize (self):
-		print ('frames per quant: ' + str(frames_per_quant)) # 124
-		print ('size: ' + str (self.length)) # 111
+	def log (self, msg):
+		print ('loop ' + str(loop.name) + ': ' + str(msg))
 		
-		print ('new size: ' + str (
-	
 
+jack_client = jack.Client('Looper')
+inport = jack_client.inports.register ('in')
 
-loops = 8
-loop = [Loop() for i in range(loops)]
-curr_loop = 0
+loops = [Loop ('0', jack_client, 'master')]
+curr_loop = loops[0]
+sync_loop = loops[0]
 record = False
 playback = False
 
-record_treshhold = 0.1
+record_treshhold = 0.05
 
-jack_client = jack.Client('Looper')
-outports = [jack_client.outports.register ("out" + str(i)) for i in range (loops)]
-inport = jack_client.inports.register ("in")
+
+def create_fractions (n):
+	fractions = [(k/i, k, i) for i in range(1,n+1) for k in range (1,i)]
+	delete = []
+	for f in fractions:
+		for k in fractions:
+			if f != k and f[0] == k[0]:
+				if f[2] < k[2]:
+					delete.append (k)
+				else:
+					delete.append (f)
+					
+	fractions = [f for f in fractions if f not in delete]
+	
+	fractions.sort(key=lambda x: x[0])
+	return [(0, 0, 1)] + fractions + [(1, 1, 1)]
+			
+	
+def quantize (master_length, curr_length, fractions):
+	q = curr_length / master_length
+	qq = q % 1
+	
+	for i in range(len(fractions)):
+		if qq < fractions[i][0]:
+			
+			if abs(qq - fractions[i-1][0]) < abs(fractions[i][0] - qq):
+				return (math.floor(q) + fractions[i-1][0], fractions[i][2])
+			else:
+				return (math.floor(q) + fractions[i][0], fractions[i][2])
+
+q_fractions = create_fractions (4)	
+
 
 @jack_client.set_process_callback
 def process (frames):
-
 	global loop
 	global curr_loop
+	global record
 	
-	state, pos = jack_client.transport_query()
-	
-	if state == jack.ROLLING:
-		if (pos['beats_per_minute'] != bpm):
-			calc_sync_settings (pos)
-		
-		if record:
-			b = inport.get_array()
-			if loop[curr_loop].state != 'record' and max(b) > record_treshhold:
-				loop[curr_loop].calc_start_tick (pos)
-				loop[curr_loop].state = 'record'
-			
-			if loop[curr_loop].state == 'record':
-				loop[curr_loop].setData (b)
-		
-		for i in range(len(loop)):
-			if loop[i].state == 'play':
-				if loop[i].curr_sample == 0:
-					if abs (pos['tick'] - loop[i].start_tick) == 0:
-						outports[i].get_array()[:] = loop[i].getData()
-				else:
-					outports[i].get_array()[:] = loop[i].getData()
+	null_sample = [0] * frames
 
-def calc_sync_settings (pos):
-	global bpm
-	global tick_diff
-	global frames_per_quant
+	if record:
+		b = inport.get_array()
+		if curr_loop.state != 'record' and max(b) > record_treshhold:
+			curr_loop.state = 'record'
+			if curr_loop.sync_loop != 'master':
+				# sync_samples should be empty list here
+				curr_loop.sync_samples.append ( curr_loop.sync_loop.curr_sample )
+			print ('recording loop ' + curr_loop.name)
+		
+		if curr_loop.state == 'record':
+			curr_loop.setData (b)
+	# play
 	
-	bpm = pos['beats_per_minute']
-	tick_diff = pos['ticks_per_beat'] / quantize
-	if int(tick_diff) != tick_diff:
-		print ('WARNING: ticks_per_beat (' + str(pos['ticks_per_beat']) + ') cannot be devided by quantize (' + str(quantize) + ')')
+	# master loop
+	ml = loops[0]
+	if ml.state == 'play':
+		ml.nextSample()
+		ml.outport.get_array()[:] = ml.getData (frames)
 	
-	tick_diff = int(tick_diff)
-	frames_per_quant =  (client.samplerate * 60 / bpm) / quantize
-	
+	for loop in loops[1:]:
+		if loop.state == 'play':
+			if loop.isPlaying or loop.sync_loop.curr_sample in loop.sync_samples:
+				
+				loop.isPlaying = True
+				loop.nextSample()
+				loop.outport.get_array()[:] = loop.getData (frames)
+				
+				if loop.curr_sample == len(loop.samples) - 1:
+					loop.isPlaying = False
+			else:
+				loop.outport.get_array()[:] = null_sample
 
-	
-			
 with jack_client:
 	jack_client.activate()
 	
-	input()
-	record = True
-	
+	i = 1
 	while True:
 		input()
-		loop[curr_loop].state = 'play'
+		print ('wait for treshold ' + curr_loop.name);
+		record = True
+		input()
+		print ('finished recording')
+		record = False
+		curr_loop.state = 'transition'
 		
-		curr_loop += 1
+		# calculate sync samples
+		if i > 1:
+			q = quantize ( len(sync_loop.samples), len(curr_loop.samples), q_fractions )
+			length = q[0]
+			if length > 0 and length != 1:
+				for k in range(q[1] - 1):
+					new_sync_sample = ( curr_loop.sync_samples[-1] + len(sync_loop.samples) * length ) % len(sync_loop.samples)
+					curr_loop.sync_samples.append (new_sync_sample)
+				
+				curr_loop.sync_samples = [round(i) for i in curr_loop.sync_samples]
+		
+		curr_loop.state = 'play'
+		
+		curr_loop = Loop ( str (i), jack_client, sync_loop )
+		loops.append (curr_loop)
+		
+		i += 1
