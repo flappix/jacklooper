@@ -4,7 +4,7 @@ from aubio import notes
 
 class Loop:
 	def __init__(self, _name, _jack_client, _sync_loop):
-		self.name = _name
+		self.name = str(_name)
 		self.samples = []
 		self.curr_sample = -1
 		
@@ -69,7 +69,7 @@ class Loop:
 
 class MidiTrack:
 	def __init__(self, _name, _loop, jack_client):
-		self.name = _name
+		self.name = str(_name)
 		self.samples = {}
 		self.curr_sample = -1
 		self.sync_sample = -1
@@ -97,5 +97,8 @@ class MidiTrack:
 			return self.samples[self.curr_sample]
 		
 		return None
-			
+	
+	def setEnabled (self, _enabled):
+		print ('midi track ' + self.name + ': ' + str(_enabled) )
+		self.enabled = _enabled			
 		

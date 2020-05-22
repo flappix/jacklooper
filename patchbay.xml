@@ -1,11 +1,11 @@
 <!DOCTYPE patchbay>
 <patchbay name="patchbay" version="0.6.1">
  <output-sockets>
-  <socket name="system" exclusive="off" type="jack-audio" client="system">
+  <socket type="jack-audio" exclusive="off" client="system" name="system">
    <plug>capture_1</plug>
    <plug>capture_2</plug>
   </socket>
-  <socket name="Looper" exclusive="off" type="jack-audio" client="Looper">
+  <socket type="jack-audio" exclusive="off" client="Looper" name="Looper">
    <plug>out0</plug>
    <plug>out1</plug>
    <plug>out2</plug>
@@ -15,7 +15,7 @@
    <plug>out6</plug>
    <plug>out7</plug>
   </socket>
-  <socket name="Hydrogen" exclusive="off" type="jack-audio" client="Hydrogen">
+  <socket type="jack-audio" exclusive="off" client="Hydrogen" name="Hydrogen">
    <plug>out_L</plug>
    <plug>out_R</plug>
    <plug>Track_1_Crash Jazz_Main_L</plug>
@@ -51,7 +51,7 @@
    <plug>Track_16_Kick_Main_L</plug>
    <plug>Track_16_Kick_Main_R</plug>
   </socket>
-  <socket name="Looper 2" exclusive="off" type="jack-audio" client="Looper">
+  <socket type="jack-audio" exclusive="off" client="Looper" name="Looper 2">
    <plug>out0</plug>
    <plug>out0</plug>
    <plug>out1</plug>
@@ -69,24 +69,24 @@
    <plug>out7</plug>
    <plug>out7</plug>
   </socket>
-  <socket name="hydrogen-midi" exclusive="off" type="jack-midi" client="hydrogen-midi">
+  <socket type="jack-midi" exclusive="off" client="hydrogen-midi" name="hydrogen-midi">
    <plug>TX</plug>
   </socket>
-  <socket name="Midi Through" exclusive="off" type="alsa-midi" client="Midi Through">
+  <socket type="alsa-midi" exclusive="off" client="Midi Through" name="Midi Through">
    <plug>Midi Through Port-0</plug>
   </socket>
  </output-sockets>
  <input-sockets>
-  <socket name="system" exclusive="off" type="jack-audio" client="system">
+  <socket type="jack-audio" exclusive="off" client="system" name="system">
    <plug>playback_1</plug>
    <plug>playback_2</plug>
    <plug>playback_3</plug>
    <plug>playback_4</plug>
   </socket>
-  <socket name="Looper" exclusive="off" type="jack-audio" client="Looper">
+  <socket type="jack-audio" exclusive="off" client="Looper" name="Looper">
    <plug>in</plug>
   </socket>
-  <socket name="system 2" exclusive="off" type="jack-audio" client="system">
+  <socket type="jack-audio" exclusive="off" client="system" name="system 2">
    <plug>playback_1</plug>
    <plug>playback_2</plug>
    <plug>playback_1</plug>
@@ -104,20 +104,20 @@
    <plug>playback_1</plug>
    <plug>playback_2</plug>
   </socket>
-  <socket name="hydrogen-midi" exclusive="off" type="jack-midi" client="hydrogen-midi">
+  <socket type="jack-midi" exclusive="off" client="hydrogen-midi" name="hydrogen-midi">
    <plug>RX</plug>
   </socket>
-  <socket name="Midi Through" exclusive="off" type="alsa-midi" client="Midi Through">
+  <socket type="alsa-midi" exclusive="off" client="Midi Through" name="Midi Through">
    <plug>Midi Through Port-0</plug>
   </socket>
  </input-sockets>
  <slots/>
  <cables>
-  <cable input="Looper" output="system" type="jack-audio"/>
-  <cable input="system" output="system" type="jack-audio"/>
-  <cable input="system" output="Looper" type="jack-audio"/>
-  <cable input="system" output="Hydrogen" type="jack-audio"/>
-  <cable input="system 2" output="Looper 2" type="jack-audio"/>
+  <cable type="jack-audio" input="Looper" output="system"/>
+  <cable type="jack-audio" input="system" output="system"/>
+  <cable type="jack-audio" input="system" output="Looper"/>
+  <cable type="jack-audio" input="system" output="Hydrogen"/>
+  <cable type="jack-audio" input="system 2" output="Looper 2"/>
  </cables>
 </patchbay>
 
