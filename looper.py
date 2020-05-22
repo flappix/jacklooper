@@ -3,8 +3,6 @@
 import jack
 import random
 import numpy
-from aubio import notes
-import copy
 from loop import Loop
 from SyncManager import SyncManager
 		
@@ -17,7 +15,7 @@ curr_loop = loops[0]
 sync_loop = loops[0]
 record = False
 playback = False
-midi_control_record = False
+midi_record = False
 
 record_treshhold = 0.05
 
@@ -44,10 +42,12 @@ def process (frames):
 		if curr_loop.state == 'record':
 			curr_loop.setData (b)
 	
-	if midi_control_record:
+	if midi_record:
 		for offset, data in midi_inport.incoming_midi_events():
 			if len(data) == 3:
-				curr_loop.setMidiData (data, curr_loop.curr_sample)
+				curr_loop.getCurrMidiTrack().setDataFromMidi (data, curr_loop.curr_sample)
+				curr_loop.getCurrMidiTrack().sync_sample = curr_loop.curr_sample
+				#print('sync sample: ' + curr_loop.getCurrMidiTrack().sync_sample)
 		
 	# play-1
 	
@@ -59,33 +59,26 @@ def process (frames):
 	
 	# non-master loops only
 	for loop in loops[1:]:
-		loop.midi_outport.clear_buffer()
 		
 		if loop.state == 'play':
 			if loop.isPlaying or loop.sync_loop.curr_sample in loop.sync_samples:
 				
-				loop.isPlaying = True
-				loop.nextSample()
+				loop.isPlaying = loop.nextSample()
 				loop.outport.get_array()[:] = loop.getData (frames)
-				
-				if loop.playMidi and loop.curr_sample in loop.midi_samples:
-					loop.midi_outport.write_midi_event (0, (144, loop.midi_samples[loop.curr_sample][0], 127))
-
-				
-				if loop.curr_sample == len(loop.samples) - 1:
-					loop.isPlaying = False
 			else:
 				loop.outport.get_array()[:] = null_sample
 	
 	# both
 	for loop in loops:
-		loop.midi_control_outport.clear_buffer()
-		
-		if loop.playMidiControl:
-			for cs in loop.midi_control_samples:
-				if loop.curr_sample in cs:
-					loop.midi_control_outport.write_midi_event (0, cs[loop.curr_sample])
+		for mt in loop.midi_tracks:
+			mt.midi_outport.clear_buffer()
 
+			if mt.enabled and (mt.isPlaying or mt.sync_sample == loop.curr_sample):
+				mt.isPlaying = mt.nextSample()
+				data = mt.getData()
+				if data != None:
+					mt.midi_outport.write_midi_event (0, data)
+					
 with jack_client:
 	jack_client.activate()
 	
@@ -102,33 +95,19 @@ with jack_client:
 		# calculate sync samples
 		if i > 1:
 			syncManager.calc_sync_samples (sync_loop, curr_loop)
-				
-			# convert to midi
-			o = notes('default', buf_size=256, hop_size=256, samplerate=44100)
-			#o.set_threshold (0.7)
-			o.set_silence (-30)
-			
-			for k in range(len(curr_loop.samples)):
-				s = curr_loop.samples[k]
-				new_note = o(s)
-				if new_note[0] != 0:
-					curr_loop.midi_samples[k] = copy.deepcopy (new_note)
-					print(new_note)
-					#print("%.6f" % (total_frames/float(samplerate)), new_note)
-					#print (o.get_last())
-			curr_loop.playMidi = True
-			curr_loop.log (curr_loop.midi_samples)
 		
+		curr_loop.convertWav2Midi()
+		curr_loop.getCurrMidiTrack().enabled = True
 		curr_loop.state = 'play'
 		
-		curr_loop.addMidiControlSample()
+		curr_loop.addMidiTrack()
 		print ('press enter to start midi control record')
 		input()
-		midi_control_record = True
+		midi_record = True
 		print ('press enter to exit midi control record')
 		input()
-		midi_control_record = False
-		curr_loop.playMidiControl = True
+		midi_record = False
+		curr_loop.getCurrMidiTrack().enabled = True
 
 		
 		curr_loop = Loop ( str (i), jack_client, sync_loop )
