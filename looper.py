@@ -110,7 +110,7 @@ argParser = argparse.ArgumentParser()
 argParser.add_argument('-l', '--loops', default=8, metavar='N', type=int, help='create N initial loops, default=8')	
 args = argParser.parse_args()
 
-looper = Looper (args.l)
+looper = Looper (args.loops)
 midiInterface = MidiInterface (looper)
 
 @looper.jack_client.set_process_callback
