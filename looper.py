@@ -7,10 +7,11 @@ from loop import Loop
 from SyncManager import SyncManager
 from MidiInterface import MidiInterface
 import struct
+import argparse
 
 class Looper:
 	
-	def __init__(self):
+	def __init__(self, num_loops=8):
 		self.jack_client = jack.Client('Looper')
 		self.inport = self.jack_client.inports.register ('in')
 
@@ -18,11 +19,10 @@ class Looper:
 		self.curr_loop = self.loops[0]
 		self.sync_loop = self.loops[0]
 		
-		self.addLoops (7)
+		self.addLoops (num_loops - 1)
 		self.curr_loop = self.loops[0]
 		
 		self.record = False
-		self.playback = False
 		self.midi_record = False
 
 		self.record_treshhold = 0.05
@@ -32,6 +32,8 @@ class Looper:
 		self.midi_inport = self.jack_client.midi_inports.register ('midi_capture')
 	
 	def addLoop (self):
+		self.record = False
+		self.midi_record = False
 		self.curr_loop = Loop ( str (len(self.loops)), self.jack_client, self.sync_loop )
 		self.loops.append (self.curr_loop)
 	
@@ -39,9 +41,39 @@ class Looper:
 		for i in range(n):
 			self.addLoop()
 	
-	def setCurrLoop (self, _curr_loop):
-		print ('set curr_loop to ' + _curr_loop.name)
-		self.curr_loop = _curr_loop
+	def deleteCurrLoop (self):
+		print ('delete loop %s' % self.curr_loop.name)
+		self.record = False
+		self.midi_record = False
+		self.curr_loop.state = 'empty'
+		i = self.loops.index (self.curr_loop)
+		del self.loops[i]
+		self.selectPrevLoop()
+	
+	def setCurrLoop (self, i):
+		if i > 0 and i < len(self.loops):
+			self.record = False
+			self.midi_record = False
+			self.curr_loop = self.loops[i]
+			print ('set curr_loop to ' + self.curr_loop.name)
+		else:
+			print ('no such loop')
+	
+	def selectNextLoop (self):
+		self.record = False
+		self.midi_record = False
+		i = self.loops.index (self.curr_loop)
+		i = (i + 1) % len(self.loops)
+		self.curr_loop = self.loops[i]
+		print ('set curr_loop to ' + self.curr_loop.name)
+		
+	def selectPrevLoop (self):
+		self.record = False
+		self.midi_record = False
+		i = self.loops.index (self.curr_loop)
+		i = (i - 1) % len(self.loops)
+		self.curr_loop = self.loops[i]
+		print ('set curr_loop to ' + self.curr_loop.name)
 	
 	def toggleRecord (self):
 		if self.record == False:
@@ -61,17 +93,24 @@ class Looper:
 		
 		self.record = not self.record
 	
-	def recordNewMidiTrack (self):
+	def toggleRecordMidi (self):
 		if not self.midi_record:
 			print ('start midi record')
-			self.curr_loop.addMidiTrack()
+			self.curr_loop.getCurrMidiTrack().isPlaying = False
+			self.curr_loop.getCurrMidiTrack().enabled = False
+			self.curr_loop.getCurrMidiTrack().samples = {}
 		else:
 			print ('end midi record')
-			self.curr_loop.getCurrMidiTrack().setEnabled (True)
+			self.curr_loop.getCurrMidiTrack().enabled = True
+			
 		self.midi_record = not self.midi_record
 			
-	
-looper = Looper()
+
+argParser = argparse.ArgumentParser()
+argParser.add_argument('-l', '--loops', default=8, metavar='N', type=int, help='create N initial loops, default=8')	
+args = argParser.parse_args()
+
+looper = Looper (args.l)
 midiInterface = MidiInterface (looper)
 
 @looper.jack_client.set_process_callback

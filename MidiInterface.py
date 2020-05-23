@@ -15,14 +15,21 @@ class MidiInterface:
 			'select_loop_6': lambda: looper.setCurrLoop (looper.loops[6]),
 			'select_loop_7': lambda: looper.setCurrLoop (looper.loops[7]),
 			
-			'select_next_loop': lambda: looper.setCurrLoop ( (looper.curr_loop + 1) % len(looper.loops) ),
-			'select_prev_loop': lambda: looper.setCurrLoop ( (looper.curr_loop - 1) % len(looper.loops) ),
+			'new_loop': lambda: looper.addLoop(),
+			'delete_loop': lambda: looper.deleteCurrLoop(),
+			'select_next_loop': lambda: looper.selectNextLoop(),
+			'select_prev_loop': lambda: looper.selectPrevLoop(),
 			
 			'toggle_record': lambda: looper.toggleRecord(),
 			
-			'toggle_wav2midi': lambda: looper.curr_loop.midi_tracks[0].setEnabled (not looper.curr_loop.midi_tracks[0].enabled),
+			'toggle_midi_track_enable': lambda: looper.curr_loop.getCurrMidiTrack().toggleEnable(),
 			
-			'toggle_record_midi_track': lambda: looper.recordNewMidiTrack()
+			'new_midi_track': lambda: looper.curr_loop.addMidiTrack(),
+			'delete_midi_track': lambda: looper.curr_loop.deleteCurrMidiTrack(),
+			'select_next_midi_track': lambda: looper.curr_loop.selectNextMidiTrack(),
+			'select_prev_midi_track': lambda: looper.curr_loop.selectPrevMidiTrack(),
+			
+			'toggle_record_midi': lambda: looper.toggleRecordMidi()
 		}
 		
 	

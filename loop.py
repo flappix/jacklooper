@@ -63,6 +63,21 @@ class Loop:
 	def addMidiTrack (self):
 		self.midi_tracks.append ( MidiTrack (self.name + '_' + str ( len (self.midi_tracks) ), self, self.jack_client ) )
 		self.curr_midi_track = len(self.midi_tracks) - 1
+		print ('add midi track %s' % self.getCurrMidiTrack().name)
+		
+	def deleteCurrMidiTrack (self):
+		print ('delete midi track %s' % self.getCurrMidiTrack().name)
+		del self.midi_tracks[self.curr_midi_track]
+		self.selectPrevMidiTrack()
+	
+	def selectNextMidiTrack (self):
+		self.curr_midi_track = (self.curr_midi_track + 1) % len(self.midi_tracks)
+		print ('select midi track %s' % self.getCurrMidiTrack().name)
+	
+	def selectPrevMidiTrack (self):
+		self.curr_midi_track = (self.curr_midi_track - 1) % len(self.midi_tracks)
+		print ('selct midi track %s' % self.getCurrMidiTrack().name)
+	
 		
 	def log (self, msg):
 		print ('loop ' + str(self.name) + ': ' + str(msg))
@@ -98,7 +113,6 @@ class MidiTrack:
 		
 		return None
 	
-	def setEnabled (self, _enabled):
-		print ('midi track ' + self.name + ': ' + str(_enabled) )
-		self.enabled = _enabled			
-		
+	def toggleEnable (self):
+		self.enabled = not self.enabled
+		print ('midi track %s: %s' % (self.name, 'enabled' if self.enabled else 'disabled'))
