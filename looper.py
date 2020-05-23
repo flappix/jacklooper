@@ -177,7 +177,8 @@ def process (frames):
 		
 with looper.jack_client:
 	looper.jack_client.activate()
-	input()
+	while True:
+		input()
 	#i = 1
 	#while True:
 	#	input()
