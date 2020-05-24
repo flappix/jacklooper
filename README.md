@@ -38,7 +38,6 @@ Modify ```midi_map.py``` to map a midi CC event to a jacklooper command.
 |select_loop_5|sets current loop to loop 5|
 |select_loop_6|sets current loop to loop 6|
 |select_loop_7|sets current loop to loop 7|
-|select_loop_8|sets current loop to loop 8|
 |select_prev_loop|sets current loop to the previous one. If current loop is the first one the last one will be selected|
 |select_next_loop|sets current loop to the next one. If current loop is the last one the first one will be selected|
 |new_loop|adds a new loop and select it as current loop|
