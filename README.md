@@ -19,8 +19,15 @@ Headless audio looper, controllable via MIDI. Under development.
 ## Usage
 
 Run ```python looper.py```.  
+Use ```-l <n>``` switch to start with n number of initial loops.  
 Connect your midi controller to the midi input port ```midi_control``` to send  commands like ```record```, ```select loop```, etc. to jacklooper.  
 Connect your midi controller to the midi input port ```midi_capture``` to record and loop midi events.
+
+### Looping
+Each loop has its own jack output port which has to be connected to its target separately. Each loop can have an unlimited number of midi tracks which may contain any midi data (notes, CC, ...). These midi tracks are looped along with the loop they are associated with. After creation and recording midi tracks are muted by default and have to be unmuted with the ```toggle_midi_track_mute``` command. Each midi track has its own jack midi output port and has to be connected to its target separatley.
+
+#### wav to midi conversion
+Right after recording a loop a midi track is created containing the converted midi notes from the wav loop. Connect the related jack midi output port to a synthesizer and unmute the midi track in order to hear it. Wav to midi conversion is not super precise and works best with easy slow monophonic melodies in the upper pitch range.
 
 ## Configuration
 
