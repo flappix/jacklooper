@@ -47,6 +47,7 @@ class Looper:
 		self.midi_record = False
 		self.curr_loop.state = 'empty'
 		i = self.loops.index (self.curr_loop)
+		self.loops[i].outport.unregister()
 		del self.loops[i]
 		self.selectPrevLoop()
 	
@@ -80,8 +81,9 @@ class Looper:
 			print ('waiting for threshold')
 			self.curr_loop.state = 'empty'
 			self.curr_loop.samples = []
-			if 0 in self.curr_loop.midi_tracks:
-				self.curr_loop.midi_tracks[0].samples = []
+			
+			if self.curr_loop.getWav2MidiTrack() != None:
+				self.curr_loop.deleteWav2MidiTrack()
 		
 		if self.record:
 			print ('stop recording')

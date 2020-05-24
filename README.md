@@ -19,7 +19,7 @@ Headless audio looper, controllable via MIDI. Under development.
 ## Usage
 
 Run ```python looper.py```.  
-Use ```-l <n>``` switch to start with n number of initial loops.  
+Use ```-l <n>``` switch to start with n number of initial loops. By default 8 loops are created.
 Connect your midi controller to the midi input port ```midi_control``` to send  commands like ```record```, ```select loop```, etc. to jacklooper.  
 Connect your midi controller to the midi input port ```midi_capture``` to record and loop midi events.
 
