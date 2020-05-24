@@ -18,6 +18,7 @@ class Loop:
 		self.sync_samples = []
 		self.state = 'empty' # empty, record, play
 		self.isPlaying = False
+		self.mute = False
 			
 
 	def setData (self, data, pos=None):
@@ -78,7 +79,9 @@ class Loop:
 		self.curr_midi_track = (self.curr_midi_track - 1) % len(self.midi_tracks)
 		print ('selct midi track %s' % self.getCurrMidiTrack().name)
 	
-		
+	def toggleMute (self):
+		self.mute = not self.mute
+	
 	def log (self, msg):
 		print ('loop ' + str(self.name) + ': ' + str(msg))
 

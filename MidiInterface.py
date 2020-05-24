@@ -22,7 +22,8 @@ class MidiInterface:
 			
 			'toggle_record': lambda: looper.toggleRecord(),
 			
-			'toggle_midi_track_enable': lambda: looper.curr_loop.getCurrMidiTrack().toggleEnable(),
+			'toggle_midi_track_mute': lambda: looper.curr_loop.getCurrMidiTrack().toggleEnable(),
+			'toggle_loop_mute': lambda: looper.curr_loop.toggleMute(),
 			
 			'new_midi_track': lambda: looper.curr_loop.addMidiTrack(),
 			'delete_midi_track': lambda: looper.curr_loop.deleteCurrMidiTrack(),

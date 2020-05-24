@@ -153,14 +153,17 @@ def process (frames):
 	for loop in looper.loops:
 		
 		# wav play
+		playNullSample = True
 		if loop.state == 'play':
 			if loop == looper.sync_loop or loop.isPlaying or loop.sync_loop.curr_sample in loop.sync_samples:
 				
 				loop.isPlaying = loop.nextSample()
-				loop.outport.get_array()[:] = loop.getData (frames)
-			else:
-				loop.outport.get_array()[:] = null_sample
-		else:
+				
+				if not loop.mute:
+					loop.outport.get_array()[:] = loop.getData (frames)
+					playNullSample = False
+					
+		if playNullSample:
 			loop.outport.get_array()[:] = null_sample
 		
 		# midi play

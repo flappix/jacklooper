@@ -15,6 +15,6 @@ midi_map = {
 	59: 'select_next_midi_track',
 	
 	45: 'toggle_record',
-	41: 'toggle_midi_track_enable',
+	41: 'toggle_midi_track_mute',
 	42: 'toggle_record_midi'
 }
