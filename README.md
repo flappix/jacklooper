@@ -33,7 +33,7 @@ Right after recording a loop a midi track is created containing the converted mi
 
 Modify ```midi_map.py``` to map a midi CC event to a jacklooper command.
 
-### commands
+### commands 
 
 |command | description|
 |--------|------------|
