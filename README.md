@@ -58,4 +58,5 @@ Modify ```midi_map.py``` to map a midi CC event to a jacklooper command.
 |toggle_record|starts/ends recording the current loop|
 |toggle_midi_record|starts/ends recording the current midi track of the current loop|
 |toggle_midi_track_mute|mutes/unmutes the current midi track of the current loop|
+|toggle_sync_mode|switches the sync mode for the current loop between ```gap``` and ```continous```|
 

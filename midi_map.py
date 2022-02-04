@@ -16,5 +16,17 @@ midi_map = {
 	
 	45: 'toggle_record',
 	41: 'toggle_midi_track_mute',
-	42: 'toggle_record_midi'
+	42: 'toggle_record_midi',
+	
+	60: 'toggle_sync_mode',
+	
+	0: 'set_volume_loop_0',
+	1: 'set_volume_loop_1',
+	2: 'set_volume_loop_2',
+	3: 'set_volume_loop_3',
+	4: 'set_volume_loop_4',
+	5: 'set_volume_loop_5',
+	6: 'set_volume_loop_6',
+	7: 'set_volume_loop_7'
+		
 }
