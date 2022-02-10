@@ -47,7 +47,7 @@ class MidiInterface:
 			'record_mode_delete': lambda: looper.setRecordMode ('delete'),
 			'record_mode_pause': lambda: looper.setRecordMode ('pause'),
 			
-			'clear_curr_loop': lambda: looper.curr_loop.clear()
+			'clear_curr_loop': lambda: self.clear_curr_loop()
 		}
 		
 		self.cmd_map_arg = {
@@ -60,7 +60,11 @@ class MidiInterface:
 			'set_volume_loop_6': lambda vol: looper.loops[6].setVolume (vol),
 			'set_volume_loop_7': lambda vol: looper.loops[7].setVolume (vol)
 		}
-		
+	
+	def clear_curr_loop (self):
+		self.looper.curr_loop.clear()
+		self.looper.record_counter = 0
+	
 	def toggle_midi_track_mute (self, l):
 		ct = self.looper.loops[l].getCurrMidiTrack()
 		if ct:
