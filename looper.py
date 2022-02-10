@@ -9,7 +9,8 @@ from MidiInterface import MidiInterface
 import struct
 import argparse
 import time
-import multiprocessing as mp
+#import multiprocessing as mp
+
 class Looper:
 	
 	def __init__(self, num_loops=8):
@@ -218,7 +219,7 @@ def process (frames):
 			if loop != looper.sync_loop and loop.isPlaying and loop.sync_loop.curr_sample[0] in loop.sync_samples:
 				loop.addPlayInstance()
 			
-			print (loop.curr_sample)
+			#print (loop.curr_sample)
 			
 			if loop == looper.sync_loop or loop.isPlaying or loop.sync_loop.curr_sample[0] in loop.sync_samples:
 					

@@ -37,9 +37,10 @@ class Loop:
 		else:
 			self.samples[pos] = data
 	
-	def getData (self, frames, playInstance=0):
+	def getData (self, frames):
 		if len(self.samples) > 0:
-			return np.multiply (self.samples[self.curr_sample[playInstance]], self.volume)
+			
+			return sum ([np.multiply (self.samples[s], self.volume) for s in self.curr_sample])
 			#return [s * self.volume for s in self.samples[self.curr_sample]] # !!! test
 		
 		return [0] * frames
