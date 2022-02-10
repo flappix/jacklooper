@@ -58,7 +58,8 @@ class MidiInterface:
 			'set_volume_loop_4': lambda vol: looper.loops[4].setVolume (vol),
 			'set_volume_loop_5': lambda vol: looper.loops[5].setVolume (vol),
 			'set_volume_loop_6': lambda vol: looper.loops[6].setVolume (vol),
-			'set_volume_loop_7': lambda vol: looper.loops[7].setVolume (vol)
+			'set_volume_loop_7': lambda vol: looper.loops[7].setVolume (vol),
+			'set_volume': lambda vol: looper.curr_loop.setVolume (vol)
 		}
 	
 	def clear_curr_loop (self):

@@ -35,9 +35,9 @@ Modify ```midi_map.py``` to map a midi CC event to a jacklooper command.
 
 Jacklooper implements three different record modes which can be changed via ```record_mode_*``` commands (see commands section for details).
 
-* ***default***: [press record] -> recording -> [press record] -> playing -> [press record] -> recording -> [press record] -> playing -> ...
-* ***delete***: [press record] -> recording -> [press record] -> playing -> [press record] -> clear loop -> [press record] -> recording -> ...
-* ***pause***: [press record] -> recording -> [press record] -> playing -> [press record] -> pause loop -> [press record] -> playing -> [press record] -> pause loop -> [press record] -> playing -> ...
+* ***default***: [toggle_record] -> recording -> [toggle_record] -> playing -> [toggle_record] -> recording -> [toggle_record] -> playing -> ...
+* ***delete***: [toggle_record] -> recording -> [toggle_record] -> playing -> [toggle_record] -> clear loop -> [toggle_record] -> recording -> ...
+* ***pause***: [toggle_record] -> recording -> [toggle_record] -> playing -> [toggle_record] -> pause loop -> [toggle_record] -> playing -> [toggle_record] -> pause loop -> [toggle_record] -> playing -> ...
 
 ### commands 
 
@@ -68,3 +68,12 @@ Jacklooper implements three different record modes which can be changed via ```r
 |record_mode_delete|sets record mode to delete|
 |record_mode_pause|sets record mode to pause|
 |clear_curr_loop|clears the current loop|
+|set_volume_loop_0 <vol>|sets volume for loop 0|
+|set_volume_loop_0 <vol>|sets volume for loop 1|
+|set_volume_loop_0 <vol>|sets volume for loop 2|
+|set_volume_loop_0 <vol>|sets volume for loop 3|
+|set_volume_loop_0 <vol>|sets volume for loop 4|
+|set_volume_loop_0 <vol>|sets volume for loop 5|
+|set_volume_loop_0 <vol>|sets volume for loop 6|
+|set_volume_loop_0 <vol>|sets volume for loop 7|
+|set_volume <vol>|sets volume for current loop|
