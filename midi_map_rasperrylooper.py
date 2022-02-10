@@ -10,7 +10,7 @@ midi_map = {
 	#61: 'select_prev_loop',
 	#62: 'select_next_loop',
 	
-	46: 'new_midi_track',
+	81: 'new_midi_track',
 	#58: 'select_prev_midi_track',
 	#59: 'select_next_midi_track',
 	
@@ -37,4 +37,10 @@ midi_map = {
 	53: 'toggle_midi_track_5_mute',
 	54: 'toggle_midi_track_6_mute',
 	55: 'toggle_midi_track_7_mute',
+	
+	39: 'record_mode_default',
+	55: 'record_mode_delete',
+	71: 'record_mode_pause',
+	
+	45: 'clear_curr_loop'
 }

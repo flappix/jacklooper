@@ -10,6 +10,7 @@ class Loop:
 		self.name = str(_name)
 		self.samples = np.array ([])
 		self.curr_sample = -1
+		self.curr_sample2 = -1 # second sample pointer, used if two parts of the loop are played simultaneously
 		
 		self.volume = 1
 		
@@ -22,7 +23,7 @@ class Loop:
 		
 		self.sync_loop = _sync_loop
 		self.sync_samples = []
-		self.state = 'empty' # empty, record, play
+		self.state = 'empty' # empty, wait, record, play
 		self.isPlaying = False
 		self.mute = False
 		
@@ -161,7 +162,15 @@ class Loop:
 		v =  MidiInterface.linearTrans (0, 2, 0, 127, volume) 
 		if v >= 0 and v <= 1:
 			self.volume = v
-			
+	
+	def clear (self):
+		print ('clear loop ' + self.name)
+		self.state = 'empty'
+		self.samples = []
+		self.sync_samples = []
+		self.curr_sample = -1
+		self.deleteAllMidiTracks()
+	
 	def log (self, msg):
 		print ('loop ' + str(self.name) + ': ' + str(msg))
 

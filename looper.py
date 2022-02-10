@@ -23,17 +23,21 @@ class Looper:
 		self.addLoops (num_loops - 1)
 		self.curr_loop = self.loops[0]
 		
-		self.record = False
 		self.midi_record = False
 
 		self.record_treshhold = 0.05
+		
+		# default	- press -> recording -> press -> playing -> press -> recording -> ...
+		# delete	- press -> recording -> press -> playing -> press -> delete    -> press -> recording -> press -> playing -> ...
+		# pause		- press -> recording -> press -> playing -> press -> plause    -> press -> playing -> ...
+		self.record_mode = 'default'
+		self.record_counter = 0
 
 		self.syncManager = SyncManager()
 
 		self.midi_inport = self.jack_client.midi_inports.register ('midi_capture')
 	
 	def addLoop (self):
-		self.record = False
 		self.midi_record = False
 		self.curr_loop = Loop ( str (len(self.loops)), self.jack_client, self.sync_loop )
 		self.loops.append (self.curr_loop)
@@ -44,7 +48,6 @@ class Looper:
 	
 	def deleteCurrLoop (self):
 		print ('delete loop %s' % self.curr_loop.name)
-		self.record = False
 		self.midi_record = False
 		self.curr_loop.state = 'empty'
 		i = self.loops.index (self.curr_loop)
@@ -54,7 +57,6 @@ class Looper:
 	
 	def setCurrLoop (self, i):
 		if i >= 0 and i < len(self.loops):
-			self.record = False
 			self.midi_record = False
 			self.curr_loop = self.loops[i]
 			print ('set curr_loop to ' + self.curr_loop.name)
@@ -62,7 +64,6 @@ class Looper:
 			print ('no such loop')
 	
 	def selectNextLoop (self):
-		self.record = False
 		self.midi_record = False
 		i = self.loops.index (self.curr_loop)
 		i = (i + 1) % len(self.loops)
@@ -70,7 +71,6 @@ class Looper:
 		print ('set curr_loop to ' + self.curr_loop.name)
 		
 	def selectPrevLoop (self):
-		self.record = False
 		self.midi_record = False
 		i = self.loops.index (self.curr_loop)
 		i = (i - 1) % len(self.loops)
@@ -78,22 +78,22 @@ class Looper:
 		print ('set curr_loop to ' + self.curr_loop.name)
 	
 	def toggleRecord (self):
-		if self.record == False:
-			print ('waiting for threshold')
-			self.curr_loop.state = 'empty'
-			self.curr_loop.samples = []
-			self.curr_loop.sync_samples = []
-			self.curr_loop.curr_sample = -1
-			self.curr_loop.deleteAllMidiTracks()
+		if self.record_counter == 0 or ( self.record_mode == 'delete' and self.record_counter == 2 ):
+			self.curr_loop.clear()
 		
-		if self.record:
+		elif self.record_counter == 1:
 			print ('stop recording')
 			print ( len(self.curr_loop.samples) )
 			if self.curr_loop != self.sync_loop:
 				
 				if self.curr_loop.getSyncMode() == 'continous':
 					self.syncManager.calc_sync_samples (self.sync_loop, self.curr_loop)
-					print (self.curr_loop.sync_samples)
+			else:
+				if self.curr_loop.getSyncMode() == 'continous':
+					for l in self.loops:
+						if l != self.curr_loop  and l.state != 'empty':
+							self.syncManager.calc_sync_samples (self.sync_loop, l)
+					
 			
 			## after executing the midi track has wrong names
 			#p = mp.Process(target=self.curr_loop.convertWav2Midi)
@@ -101,8 +101,28 @@ class Looper:
 			self.curr_loop.state = 'play'
 			#
 			#self.curr_loop.convertWav2Midi()
+	
 		
-		self.record = not self.record
+		elif self.record_mode == 'pause':
+			if self.record_counter % 2 == 0:
+				print ('pause loop ' + self.curr_loop.name)
+				self.curr_loop.state = 'wait'
+				self.curr_loop.curr_sample = -1
+			elif self.record_counter % 2 == 1:
+				print ('play loop ' + self.curr_loop.name)
+				self.curr_loop.state = 'play'
+		
+		if self.record_counter == 0:
+			print ('waiting for treshold')
+		
+		if self.record_mode == 'default':
+			self.record_counter = (self.record_counter + 1) %  2
+		elif self.record_mode == 'delete':
+			self.record_counter = (self.record_counter + 1) %  3
+		elif self.record_mode == 'pause':
+			self.record_counter += 1
+		
+			
 	
 	def toggleRecordMidi (self):
 		midi_track = self.curr_loop.getCurrMidiTrack()
@@ -119,6 +139,13 @@ class Looper:
 				self.curr_loop.getCurrMidiTrack().enabled = True
 				
 			self.midi_record = not self.midi_record
+	
+	def getSlaveLoops (self):
+		return [l for l in self.loops if l != self.sync_loop]
+	
+	def setRecordMode (self, mode):
+		self.record_mode = mode
+		self.record_counter = 0
 			
 
 argParser = argparse.ArgumentParser()
@@ -146,13 +173,19 @@ def process (frames):
 		
 	# record wav
 	curr_loop = looper.curr_loop
-	if looper.record:
+	if looper.record_counter == 1:
 		b = looper.inport.get_array()
 		if curr_loop.state != 'record' and max(b) > looper.record_treshhold:
 			curr_loop.state = 'record'
-			if curr_loop.sync_loop != 'master':
+			if curr_loop != looper.sync_loop:
 				# sync_samples should be empty list here
+				# TODO: test this line:
+				#curr_loop.sync_samples = [curr_loop.sync_loop.curr_sample]
 				curr_loop.sync_samples.append ( curr_loop.sync_loop.curr_sample )
+			else:
+				for l in looper.getSlaveLoops():
+					l.sync_samples = [l.sync_loop.curr_sample]
+					
 			print ('recording loop ' + curr_loop.name)
 		
 		if curr_loop.state == 'record':
