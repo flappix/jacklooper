@@ -41,7 +41,7 @@ Jacklooper implements three different record modes which can be changed via ```r
 
 ### commands 
 
-|---------- command --------| description|
+|----------------- command -----------------| description|
 |--------|------------|
 |select_loop_0|sets current loop to loop 0|
 |select_loop_1|sets current loop to loop 1|
