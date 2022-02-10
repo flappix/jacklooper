@@ -34,7 +34,7 @@ Modify ```midi_map.py``` to map a midi CC event to a jacklooper command.
 
 ## Record modes
 
-Jacklooper implements three different modes which can be changed via record_mode_* commands (see commands section for details).
+Jacklooper implements three different record modes which can be changed via ```record_mode_*``` commands (see commands section for details).
 
 * ***default***: [press record] -> recording -> [press record] -> playing -> [press record] -> recording -> [press record] -> playing -> ...
 * ***delete***: [press record] -> recording -> [press record] -> playing -> [press record] -> clear loop -> [press record] -> recording -> ...
