@@ -9,8 +9,7 @@ class Loop:
 	def __init__(self, _name, _jack_client, _sync_loop):
 		self.name = str(_name)
 		self.samples = np.array ([])
-		self.curr_sample = -1
-		self.curr_sample2 = -1 # second sample pointer, used if two parts of the loop are played simultaneously
+		self.curr_sample = [-1]
 		
 		self.volume = 1
 		
@@ -30,20 +29,23 @@ class Loop:
 		self.sync_modes = ['continous', 'gap']
 		self.curr_sync_mode = 0
 
-	def setData (self, data, pos=None):
+	def setData (self, data, pos=None, playInstance=0):
 		if pos == None:
 			#self.samples = np.append ( self.samples, copy.deepcopy (data) )
 			self.samples.append ( copy.deepcopy (data) )
-			self.curr_sample += 1
+			self.curr_sample[playInstance] += 1
 		else:
 			self.samples[pos] = data
 	
-	def getData (self, frames):
+	def getData (self, frames, playInstance=0):
 		if len(self.samples) > 0:
-			return np.multiply (self.samples[self.curr_sample], self.volume)
+			return np.multiply (self.samples[self.curr_sample[playInstance]], self.volume)
 			#return [s * self.volume for s in self.samples[self.curr_sample]] # !!! test
 		
 		return [0] * frames
+	
+	def addPlayInstance (self):
+		self.curr_sample += [-1]
 	
 	def getCurrMidiTrack (self):
 		if self.curr_midi_track != -1:
@@ -80,8 +82,23 @@ class Loop:
 	
 	def nextSample (self):
 		if len(self.samples) > 0:
-			self.curr_sample = (self.curr_sample + 1) % len (self.samples)
-			return self.curr_sample < len(self.samples) - 1
+			
+			delete = []
+			for i in range(len(self.curr_sample)):
+				self.curr_sample[i] += 1
+			
+				if self.curr_sample[i] >= len (self.samples) - 1:
+					delete.append (i)
+			
+			for i in delete:
+				if len (self.curr_sample) > 1:
+					del self.curr_sample[i]
+				else:
+					 self.curr_sample[i] = -1
+					 return False
+			
+			return True
+			
 		else:
 			return False
 	
@@ -168,7 +185,7 @@ class Loop:
 		self.state = 'empty'
 		self.samples = []
 		self.sync_samples = []
-		self.curr_sample = -1
+		self.curr_sample = [-1]
 		self.deleteAllMidiTracks()
 	
 	def log (self, msg):

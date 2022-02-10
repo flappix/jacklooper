@@ -107,7 +107,7 @@ class Looper:
 			if self.record_counter % 2 == 0:
 				print ('pause loop ' + self.curr_loop.name)
 				self.curr_loop.state = 'wait'
-				self.curr_loop.curr_sample = -1
+				self.curr_loop.curr_sample = [-1]
 			elif self.record_counter % 2 == 1:
 				print ('play loop ' + self.curr_loop.name)
 				self.curr_loop.state = 'play'
@@ -181,10 +181,10 @@ def process (frames):
 				# sync_samples should be empty list here
 				# TODO: test this line:
 				#curr_loop.sync_samples = [curr_loop.sync_loop.curr_sample]
-				curr_loop.sync_samples.append ( curr_loop.sync_loop.curr_sample )
+				curr_loop.sync_samples.append ( curr_loop.sync_loop.curr_sample[0] )
 			else:
 				for l in looper.getSlaveLoops():
-					l.sync_samples = [l.sync_loop.curr_sample]
+					l.sync_samples = [l.sync_loop.curr_sample[0]]
 					
 			print ('recording loop ' + curr_loop.name)
 		
@@ -202,7 +202,7 @@ def process (frames):
 				curr_loop.getCurrMidiTrack().setDataFromMidi (data)
 				
 				if curr_loop.getCurrMidiTrack().sync_sample == -1:
-					curr_loop.getCurrMidiTrack().sync_sample = curr_loop.curr_sample
+					curr_loop.getCurrMidiTrack().sync_sample = curr_loop.curr_sample[0]
 		
 		if not any_input and curr_loop.getCurrMidiTrack().sync_sample != -1:
 			curr_loop.getCurrMidiTrack().copyLastSample()
@@ -214,14 +214,20 @@ def process (frames):
 		# wav play
 		playNullSample = True
 		if loop.state == 'play':
-			if loop == looper.sync_loop or loop.isPlaying or loop.sync_loop.curr_sample in loop.sync_samples:
+			
+			if loop != looper.sync_loop and loop.isPlaying and loop.sync_loop.curr_sample[0] in loop.sync_samples:
+				loop.addPlayInstance()
+			
+			print (loop.curr_sample)
+			
+			if loop == looper.sync_loop or loop.isPlaying or loop.sync_loop.curr_sample[0] in loop.sync_samples:
 					
 				loop.isPlaying = loop.nextSample()
 				
 				if not loop.mute:
 					loop.outport.get_array()[:] = loop.getData (frames)
 					playNullSample = False
-					
+				
 		if playNullSample:
 			loop.outport.get_array()[:] = null_sample
 		
@@ -241,12 +247,12 @@ def process (frames):
 				play = True
 				### TODO: handle midi tracks which are longer than wav loop
 				if not mt.isPlaying:
-					if loop.curr_sample >= mt.sync_sample and loop.curr_sample - mt.sync_sample < len(mt.samples):	
-						mt.curr_sample = loop.curr_sample - mt.sync_sample
+					if loop.curr_sample[0] >= mt.sync_sample and loop.curr_sample[0] - mt.sync_sample < len(mt.samples):	
+						mt.curr_sample = loop.curr_sample[0] - mt.sync_sample
 						play = True
-					elif loop.curr_sample < mt.sync_sample and (len (loop.samples) - mt.sync_sample) + loop.curr_sample < len(mt.samples):
+					elif loop.curr_sample[0] < mt.sync_sample and (len (loop.samples) - mt.sync_sample) + loop.curr_sample[0] < len(mt.samples):
 						play = True
-						mt.curr_sample = (len (loop.samples) - mt.sync_sample) + loop.curr_sample
+						mt.curr_sample = (len (loop.samples) - mt.sync_sample) + loop.curr_sample[0]
 					else:
 						play = False
 						#print ('not play')
