@@ -7,7 +7,6 @@ Headless audio looper, controllable via MIDI. Under development.
   * synchronization
 * midi looping
   * notes and cc events
-* wav to midi conversion
 * controllable via midi
 
 ## Requirements
