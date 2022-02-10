@@ -68,12 +68,12 @@ Jacklooper implements three different record modes which can be changed via ```r
 |record_mode_delete|sets record mode to delete|
 |record_mode_pause|sets record mode to pause|
 |clear_curr_loop|clears the current loop|
-|set_volume_loop_0 <vol>|sets volume for loop 0|
-|set_volume_loop_0 <vol>|sets volume for loop 1|
-|set_volume_loop_0 <vol>|sets volume for loop 2|
-|set_volume_loop_0 <vol>|sets volume for loop 3|
-|set_volume_loop_0 <vol>|sets volume for loop 4|
-|set_volume_loop_0 <vol>|sets volume for loop 5|
-|set_volume_loop_0 <vol>|sets volume for loop 6|
-|set_volume_loop_0 <vol>|sets volume for loop 7|
-|set_volume <vol>|sets volume for current loop|
+|set_volume_loop_0 &lt;vol&gt;|sets volume for loop 0|
+|set_volume_loop_1 &lt;vol&gt;|sets volume for loop 1|
+|set_volume_loop_2 &lt;vol&gt;|sets volume for loop 2|
+|set_volume_loop_3 &lt;vol&gt;|sets volume for loop 3|
+|set_volume_loop_4 &lt;vol&gt;|sets volume for loop 4|
+|set_volume_loop_5 &lt;vol&gt;|sets volume for loop 5|
+|set_volume_loop_6 &lt;vol&gt;|sets volume for loop 6|
+|set_volume_loop_7 &lt;vol&gt;|sets volume for loop 7|
+|set_volume &lt;vol&gt;|sets volume for current loop|
