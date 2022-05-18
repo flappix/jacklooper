@@ -7,14 +7,14 @@ Headless audio looper, controllable via MIDI. Under development.
   * synchronization
 * midi looping
   * notes and cc events
-* wav to midi conversion
 * controllable via midi
 
 ## Requirements
 
-* Python 3.6
-* Jack
-* Aubio
+* Jack2
+* Python 3
+	* numpy ```pip install numpy```
+	* jackclient-python ```pip install JACK-Client```
 
 ## Usage
 
@@ -25,18 +25,23 @@ Connect your midi controller to the midi input port ```midi_control``` to send  
 Connect your midi controller to the midi input port ```midi_capture``` to record and loop midi events.
 
 ### Looping
-Each loop has its own jack output port which has to be connected to its target separately. Each loop can have an unlimited number of midi tracks which may contain any midi data (notes, CC, ...). These midi tracks are looped along with the loop they are associated with. After creation and recording midi tracks are muted by default and have to be unmuted with the ```toggle_midi_track_mute``` command. Each midi track has its own jack midi output port and has to be connected to its target separatley.
-
-#### wav to midi conversion
-Right after recording a loop a midi track is created containing the converted midi notes from the wav loop. Connect the related jack midi output port to a synthesizer and unmute the midi track in order to hear it. Wav to midi conversion is not super precise and works best with easy slow monophonic melodies in the upper pitch range.
+Each loop has its own jack output port which has to be connected to its target separately. Each loop can have an unlimited number of midi tracks which may contain any midi data (notes, CC, ...). These midi tracks are looped along with the loop they are associated with. Each midi track has its own jack midi output port and has to be connected to its target separatley.
 
 ## Configuration
 
 Modify ```midi_map.py``` to map a midi CC event to a jacklooper command.
 
+## Record modes
+
+Jacklooper implements three different record modes which can be changed via ```record_mode_*``` commands (see commands section for details).
+
+* ***default***: [toggle_record] -> recording -> [toggle_record] -> playing -> [toggle_record] -> recording -> [toggle_record] -> playing -> ...
+* ***delete***: [toggle_record] -> recording -> [toggle_record] -> playing -> [toggle_record] -> clear loop -> [toggle_record] -> recording -> ...
+* ***pause***: [toggle_record] -> recording -> [toggle_record] -> playing -> [toggle_record] -> pause loop -> [toggle_record] -> playing -> [toggle_record] -> pause loop -> [toggle_record] -> playing -> ...
+
 ### commands 
 
-|command | description|
+|              command                 | description|
 |--------|------------|
 |select_loop_0|sets current loop to loop 0|
 |select_loop_1|sets current loop to loop 1|
@@ -59,4 +64,16 @@ Modify ```midi_map.py``` to map a midi CC event to a jacklooper command.
 |toggle_midi_record|starts/ends recording the current midi track of the current loop|
 |toggle_midi_track_mute|mutes/unmutes the current midi track of the current loop|
 |toggle_sync_mode|switches the sync mode for the current loop between ```gap``` and ```continous```|
-
+|record_mode_default|sets record mode to default|
+|record_mode_delete|sets record mode to delete|
+|record_mode_pause|sets record mode to pause|
+|clear_curr_loop|clears the current loop|
+|set_volume_loop_0 &lt;vol&gt;|sets volume for loop 0|
+|set_volume_loop_1 &lt;vol&gt;|sets volume for loop 1|
+|set_volume_loop_2 &lt;vol&gt;|sets volume for loop 2|
+|set_volume_loop_3 &lt;vol&gt;|sets volume for loop 3|
+|set_volume_loop_4 &lt;vol&gt;|sets volume for loop 4|
+|set_volume_loop_5 &lt;vol&gt;|sets volume for loop 5|
+|set_volume_loop_6 &lt;vol&gt;|sets volume for loop 6|
+|set_volume_loop_7 &lt;vol&gt;|sets volume for loop 7|
+|set_volume &lt;vol&gt;|sets volume for current loop|
