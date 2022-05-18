@@ -16,7 +16,7 @@ midi_map = {
 	
 	144: 'toggle_record',
 	#41: 'toggle_midi_track_mute',
-	42: 'toggle_record_midi',
+	145: 'toggle_record_midi',
 	
 	#60: 'toggle_sync_mode'
 	

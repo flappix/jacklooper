@@ -9,7 +9,9 @@ class Loop:
 	def __init__(self, _name, _jack_client, _sync_loop):
 		self.name = str(_name)
 		self.samples = np.array ([])
-		self.curr_sample = [-1]
+		self.curr_sample = []
+		self.head_buffer = []
+		self.tail_buffer = []
 		
 		self.volume = 1
 		
@@ -33,7 +35,7 @@ class Loop:
 		if pos == None:
 			#self.samples = np.append ( self.samples, copy.deepcopy (data) )
 			self.samples.append ( copy.deepcopy (data) )
-			self.curr_sample[playInstance] += 1
+			#self.curr_sample[playInstance] += 1
 		else:
 			self.samples[pos] = data
 	
@@ -45,8 +47,43 @@ class Loop:
 		
 		return [0] * frames
 	
+	def stopRecord (self):
+		self.curr_sample = []
+		
+		if len (self.samples) > 0:
+			self.log ('head_buffer: %s' % len(self.head_buffer))
+			self.log ('samples before buffer merge: %s' % len(self.samples))
+			self.samples = self.head_buffer + self.samples
+			self.log ('samples after add head_buffer: %s' % len(self.samples))
+			
+			if self.sync_loop != 'master' and self.sync_loop != self:
+				if len (self.sync_loop.samples) == 0:
+					print ('ERROR sync_loop.samples is empty')
+					print ('self.name: ' + self.name)
+					print ('self.sync_loop.name: ' + self.sync_loop.name)
+				
+				# bug: 2nd repeat cycle within one master loop starts too early
+				self.sync_samples = sorted ([( s - len (self.head_buffer) ) % len (self.sync_loop.samples) for s in self.sync_samples])
+				#self.sync_samples = [( s - ( len (self.head_buffer) * (1 if i == 0 else 0) ) ) % len (self.sync_loop.samples) for i, s in enumerate (self.sync_samples)]
+				
+				self.log ('sync_samples after add head_buffer: %s' % self.sync_samples)
+			else:
+				self.sync_samples = []
+			
+			self.state = 'play'
+		
+		else:
+			self.state = 'empty'
+	
 	def addPlayInstance (self):
 		self.curr_sample += [-1]
+		
+		self.log ('add play instance at')
+		if self.sync_loop != 'master':
+			for i, cs in enumerate (self.sync_loop.curr_sample):
+				self.sync_loop.log ('curr_sample[%s]: %s' % (i, cs))
+		for i, cs in enumerate (self.curr_sample):
+			self.log ('curr_sample[%s]: %s' % (i, cs))
 	
 	def getCurrMidiTrack (self):
 		if self.curr_midi_track != -1:
@@ -92,11 +129,7 @@ class Loop:
 					delete.append (i)
 			
 			for i in delete:
-				if len (self.curr_sample) > 1:
-					del self.curr_sample[i]
-				else:
-					 self.curr_sample[i] = -1
-					 return False
+				del self.curr_sample[i]
 			
 			return True
 			
@@ -185,12 +218,14 @@ class Loop:
 		print ('clear loop ' + self.name)
 		self.state = 'empty'
 		self.samples = []
+		self.head_buffer = []
+		self.tail_buffer = []
 		self.sync_samples = []
-		self.curr_sample = [-1]
+		self.curr_sample = []
 		self.deleteAllMidiTracks()
 	
 	def log (self, msg):
-		print ('loop ' + str(self.name) + ': ' + str(msg))
+		print ('loop ' + str(self.name) + (' (master) ' if self.sync_loop == 'master' else '') + ': ' + str(msg))
 
 class MidiTrack:
 	def __init__(self, _name, _loop, jack_client):

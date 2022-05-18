@@ -51,14 +51,14 @@ class MidiInterface:
 		}
 		
 		self.cmd_map_arg = {
-			'set_volume_loop_0': lambda vol: looper.loops[0].setVolume (vol),
-			'set_volume_loop_1': lambda vol: looper.loops[1].setVolume (vol),
-			'set_volume_loop_2': lambda vol: looper.loops[2].setVolume (vol),
-			'set_volume_loop_3': lambda vol: looper.loops[3].setVolume (vol),
-			'set_volume_loop_4': lambda vol: looper.loops[4].setVolume (vol),
-			'set_volume_loop_5': lambda vol: looper.loops[5].setVolume (vol),
-			'set_volume_loop_6': lambda vol: looper.loops[6].setVolume (vol),
-			'set_volume_loop_7': lambda vol: looper.loops[7].setVolume (vol),
+			'set_volume_loop_0': lambda vol: self.setVol (0, vol),
+			'set_volume_loop_1': lambda vol: self.setVol (1, vol),
+			'set_volume_loop_2': lambda vol: self.setVol (2, vol),
+			'set_volume_loop_3': lambda vol: self.setVol (3, vol),
+			'set_volume_loop_4': lambda vol: self.setVol (4, vol),
+			'set_volume_loop_5': lambda vol: self.setVol (5, vol),
+			'set_volume_loop_6': lambda vol: self.setVol (6, vol),
+			'set_volume_loop_7': lambda vol: self.setVol (7, vol),
 			'set_volume': lambda vol: looper.curr_loop.setVolume (vol)
 		}
 	
@@ -70,7 +70,10 @@ class MidiInterface:
 		ct = self.looper.loops[l].getCurrMidiTrack()
 		if ct:
 			ct.toggleEnable(),
-		
+	
+	def setVol (self, loop, vol):
+		if loop >= 0 and loop < len(self.looper.loops):
+			self.looper.loops[loop].setVolume (vol)
 	
 	def executeMidiCmd (self, cmd, arg):
 		if cmd in midi_map:
