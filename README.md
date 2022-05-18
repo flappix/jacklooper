@@ -8,6 +8,7 @@ Headless audio looper, controllable via MIDI. Under development.
 * midi looping
   * notes and cc events
 * controllable via midi
+* smooth transitions between loop cycles
 
 ## Requirements
 
@@ -23,6 +24,12 @@ Use ```-l <n>``` switch to start with n number of initial loops. By default 8 lo
 
 Connect your midi controller to the midi input port ```midi_control``` to send  commands like ```record```, ```select loop```, etc. to jacklooper.  
 Connect your midi controller to the midi input port ```midi_capture``` to record and loop midi events.
+
+### smooth transitions between loop cycles
+
+jacklooper will add a small number of additional samples to the beginning and end of each loop to avoid edgy noises when a new cycle begins.
+The number of samples can be configured using the ```-b <n>``` switch.
+
 
 ### Looping
 Each loop has its own jack output port which has to be connected to its target separately. Each loop can have an unlimited number of midi tracks which may contain any midi data (notes, CC, ...). These midi tracks are looped along with the loop they are associated with. Each midi track has its own jack midi output port and has to be connected to its target separatley.

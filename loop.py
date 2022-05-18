@@ -214,8 +214,8 @@ class Loop:
 		if v >= 0 and v <= 1:
 			self.volume = v
 	
-	def clear (self):
-		print ('clear loop ' + self.name)
+	def clear (self, looper):
+		self.log ('cleared')
 		self.state = 'empty'
 		self.samples = []
 		self.head_buffer = []
@@ -223,6 +223,20 @@ class Loop:
 		self.sync_samples = []
 		self.curr_sample = []
 		self.deleteAllMidiTracks()
+		
+		if self.sync_loop == 'master':
+			# turn first non-empty loop into master looper
+			for l in looper.loops:
+				if len (l.samples) > 0:
+					looper.sync_loop = l
+					for ll in looper.loops:
+						if ll != l:
+							ll.sync_loop = l
+						else:
+							ll.sync_loop = 'master'
+					
+					l.log ('new master')
+		
 	
 	def log (self, msg):
 		print ('loop ' + str(self.name) + (' (master) ' if self.sync_loop == 'master' else '') + ': ' + str(msg))

@@ -63,7 +63,7 @@ class MidiInterface:
 		}
 	
 	def clear_curr_loop (self):
-		self.looper.curr_loop.clear()
+		self.looper.curr_loop.clear (self.looper)
 		self.looper.record_counter = 0
 	
 	def toggle_midi_track_mute (self, l):

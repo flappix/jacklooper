@@ -89,10 +89,10 @@ class Looper:
 	
 	def toggleRecord (self):
 		if self.record_counter == 0 or ( self.record_mode == 'delete' and self.record_counter == 2 ):
-			self.curr_loop.clear()
-		
+			self.curr_loop.clear (self)
+			
 		elif self.record_counter == 1:
-			print ('stop recording')
+			self.curr_loop.log ('stop recording')
 			
 			if self.curr_loop != self.sync_loop:
 				
@@ -104,16 +104,7 @@ class Looper:
 						for l in self.loops:
 							if l != self.curr_loop  and l.state != 'empty':
 								self.syncManager.calc_sync_samples (self.sync_loop, l)
-				else:
-					# turn first non-empty loop into master looper
-					for l in self.loops:
-						if len (l.samples) > 0:
-							self.sync_loop = l
-							for ll in self.loops:
-								if ll != l:
-									ll.sync_loop = l
-								else:
-									ll.sync_loop = 'master'
+					
 									
 							l.sync_samples = []
 							break
@@ -131,11 +122,11 @@ class Looper:
 		
 		elif self.record_mode == 'pause':
 			if self.record_counter % 2 == 0:
-				print ('pause loop ' + self.curr_loop.name)
+				curr_loop.log ('pause')
 				self.curr_loop.state = 'wait'
 				self.curr_loop.curr_sample = []
 			elif self.record_counter % 2 == 1:
-				print ('play loop ' + self.curr_loop.name)
+				curr_loop.log ('playing')
 				self.curr_loop.state = 'play'
 		
 		if self.record_counter == 0:
@@ -178,9 +169,11 @@ argParser = argparse.ArgumentParser()
 argParser.add_argument('-l', '--loops', default=8, metavar='N', type=int, help='create N initial loops, default=8')	
 argParser.add_argument('-i', '--input', help='toggle record on stdin input', action='store_true')	
 argParser.add_argument('-b', '--buffer', help='buffer size in milliseconds', type=int,  default=300, metavar='N')	
+argParser.add_argument('-t', '--threshold', help='audio signal threshold at which recording starts after sending the record command', type=float,  default=0.05, metavar='N')	
 args = argParser.parse_args()
 
 looper = Looper (args.loops, args.buffer)
+looper.record_treshhold = args.threshold
 midiInterface = MidiInterface (looper)
 
 @looper.jack_client.set_process_callback
@@ -216,8 +209,8 @@ def process (frames):
 				for l in looper.getSlaveLoops():
 					if len (l.curr_sample) > 0:
 						l.sync_samples = [l.sync_loop.curr_sample[0]]
-					
-			print ('recording loop ' + curr_loop.name)
+						
+			curr_loop.log ('recording')
 		
 		if curr_loop.state == 'record':
 			curr_loop.setData (b)
