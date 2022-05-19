@@ -1,4 +1,3 @@
-import copy
 import struct
 from aubio import notes
 import numpy as np
@@ -6,7 +5,7 @@ from MidiInterface import MidiInterface
 import time
 
 class Loop:
-	def __init__(self, _name, _jack_client, _sync_loop):
+	def __init__(self, _name, _jack_client, _looper):
 		self.name = str(_name)
 		self.samples = np.array ([])
 		self.curr_sample = []
@@ -22,7 +21,7 @@ class Loop:
 		self.jack_client = _jack_client
 		self.outport = self.jack_client.outports.register ( 'out' + str (self.name) )
 		
-		self.sync_loop = _sync_loop
+		self.looper = _looper
 		self.sync_samples = []
 		self.state = 'empty' # empty, wait, record, play
 		self.isPlaying = False
@@ -34,7 +33,7 @@ class Loop:
 	def setData (self, data, pos=None, playInstance=0):
 		if pos == None:
 			#self.samples = np.append ( self.samples, copy.deepcopy (data) )
-			self.samples.append ( copy.deepcopy (data) )
+			self.samples.append (data)
 			#self.curr_sample[playInstance] += 1
 		else:
 			self.samples[pos] = data
@@ -56,15 +55,15 @@ class Loop:
 			self.samples = self.head_buffer + self.samples
 			self.log ('samples after add head_buffer: %s' % len(self.samples))
 			
-			if self.sync_loop != 'master' and self.sync_loop != self:
-				if len (self.sync_loop.samples) == 0:
+			if not self.looper.isMaster (self):
+				if len (self.looper.sync_loop.samples) == 0:
 					print ('ERROR sync_loop.samples is empty')
 					print ('self.name: ' + self.name)
-					print ('self.sync_loop.name: ' + self.sync_loop.name)
+					print ('self.looper.sync_loop.name: ' + self.looper.sync_loop.name)
 				
 				# bug: 2nd repeat cycle within one master loop starts too early
-				self.sync_samples = sorted ([( s - len (self.head_buffer) ) % len (self.sync_loop.samples) for s in self.sync_samples])
-				#self.sync_samples = [( s - ( len (self.head_buffer) * (1 if i == 0 else 0) ) ) % len (self.sync_loop.samples) for i, s in enumerate (self.sync_samples)]
+				self.sync_samples = sorted ([( s - len (self.head_buffer) ) % len (self.looper.sync_loop.samples) for s in self.sync_samples])
+				#self.sync_samples = [( s - ( len (self.head_buffer) * (1 if i == 0 else 0) ) ) % len (self.looper.sync_loop.samples) for i, s in enumerate (self.sync_samples)]
 				
 				self.log ('sync_samples after add head_buffer: %s' % self.sync_samples)
 			else:
@@ -79,9 +78,9 @@ class Loop:
 		self.curr_sample += [-1]
 		
 		self.log ('add play instance at')
-		if self.sync_loop != 'master':
-			for i, cs in enumerate (self.sync_loop.curr_sample):
-				self.sync_loop.log ('curr_sample[%s]: %s' % (i, cs))
+		if not self.looper.isMaster (self):
+			for i, cs in enumerate (self.looper.sync_loop.curr_sample):
+				self.looper.sync_loop.log ('curr_sample[%s]: %s' % (i, cs))
 		for i, cs in enumerate (self.curr_sample):
 			self.log ('curr_sample[%s]: %s' % (i, cs))
 	
@@ -90,6 +89,10 @@ class Loop:
 			return self.midi_tracks[self.curr_midi_track]
 		
 		return None
+	
+	def getTailBuffer (self):
+		if len (self.tail_buffer) < self.looper.buffer.maxlen:
+			return self.tail_buffer + ([0] * self.looper.buffer.maxlen)
 	
 	def getMidiData (self):
 		return [cs for cs in self.midi_control_samples]
@@ -213,6 +216,7 @@ class Loop:
 		v =  MidiInterface.linearTrans (0, 2, 0, 127, volume) 
 		if v >= 0 and v <= 1:
 			self.volume = v
+		
 	
 	def clear (self, looper):
 		self.log ('cleared')
@@ -224,22 +228,16 @@ class Loop:
 		self.curr_sample = []
 		self.deleteAllMidiTracks()
 		
-		if self.sync_loop == 'master':
+		if self.looper.isMaster (self):
 			# turn first non-empty loop into master looper
 			for l in looper.loops:
 				if len (l.samples) > 0:
-					looper.sync_loop = l
-					for ll in looper.loops:
-						if ll != l:
-							ll.sync_loop = l
-						else:
-							ll.sync_loop = 'master'
-					
-					l.log ('new master')
+					looper.set_sync_loop (l)
+					break
 		
 	
 	def log (self, msg):
-		print ('loop ' + str(self.name) + (' (master) ' if self.sync_loop == 'master' else '') + ': ' + str(msg))
+		print ('loop ' + str(self.name) + (' (master) ' if self.looper.isMaster (self) else '') + ': ' + str(msg))
 
 class MidiTrack:
 	def __init__(self, _name, _loop, jack_client):

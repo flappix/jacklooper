@@ -3,6 +3,7 @@
 import jack
 import random
 import numpy as np
+import copy
 from loop import Loop
 from SyncManager import SyncManager
 from MidiInterface import MidiInterface
@@ -18,7 +19,7 @@ class Looper:
 		self.jack_client = jack.Client('Looper')
 		self.inport = self.jack_client.inports.register ('in')
 
-		self.loops = [Loop ('0', self.jack_client, 'master')]
+		self.loops = [Loop ('0', self.jack_client, self)]
 		self.curr_loop = self.loops[0]
 		self.sync_loop = self.loops[0]
 		
@@ -43,7 +44,7 @@ class Looper:
 	
 	def addLoop (self):
 		self.midi_record = False
-		self.curr_loop = Loop ( str (len(self.loops)), self.jack_client, self.sync_loop )
+		self.curr_loop = Loop ( str (len(self.loops)), self.jack_client, self )
 		self.loops.append (self.curr_loop)
 	
 	def addLoops (self, n):
@@ -68,8 +69,15 @@ class Looper:
 			
 			self.curr_loop = self.loops[i]
 			print ('set curr_loop to ' + self.curr_loop.name)
+			
+			if not self.isMaster (self.curr_loop) and len (self.sync_loop.samples) == 0:
+				self.set_sync_loop (self.curr_loop)
 		else:
 			print ('no such loop')
+	
+	def set_sync_loop (self, l):
+		self.sync_loop = l		
+		l.log ('new master')
 	
 	def selectNextLoop (self):
 		self.midi_record = False
@@ -94,22 +102,25 @@ class Looper:
 		elif self.record_counter == 1:
 			self.curr_loop.log ('stop recording')
 			
-			if self.curr_loop != self.sync_loop:
-				
-				if self.curr_loop.getSyncMode() == 'continous':
-					self.syncManager.calc_sync_samples (self.sync_loop, self.curr_loop)
-			else: # self.curr_loop == self.sync_loop
-				if len (self.curr_loop.samples) > 0:
+			if len (self.curr_loop.samples) >= self.buffer.maxlen * 2:
+				if self.curr_loop != self.sync_loop:
+					
+					if self.curr_loop.getSyncMode() == 'continous':
+						self.syncManager.calc_sync_samples (self.sync_loop, self.curr_loop)
+				else: # self.curr_loop == self.sync_loop
 					if self.curr_loop.getSyncMode() == 'continous':
 						for l in self.loops:
 							if l != self.curr_loop  and l.state != 'empty':
 								self.syncManager.calc_sync_samples (self.sync_loop, l)
 					
-									
 							l.sync_samples = []
 							break
-			
-			self.curr_loop.stopRecord()
+				
+				self.curr_loop.stopRecord()
+			else:
+				self.curr_loop.log ('warning: loop length is smaller than 2 * buffer_size, dropping loop')
+				self.curr_loop.samples = []
+				self.curr_loop.state = 'empty'
 			
 			
 			
@@ -163,12 +174,15 @@ class Looper:
 	def setRecordMode (self, mode):
 		self.record_mode = mode
 		self.record_counter = 0
+	
+	def isMaster (self, loop):
+		return self.sync_loop == loop
 			
 
 argParser = argparse.ArgumentParser()
 argParser.add_argument('-l', '--loops', default=8, metavar='N', type=int, help='create N initial loops, default=8')	
 argParser.add_argument('-i', '--input', help='toggle record on stdin input', action='store_true')	
-argParser.add_argument('-b', '--buffer', help='buffer size in milliseconds', type=int,  default=300, metavar='N')	
+argParser.add_argument('-b', '--buffer', help='buffer size in milliseconds. Results in smooth transition between loop cycles. Higher values may leed to undesired results. Values higher than 500 do not make any sense. The minimum length of a loop has to longer than 2 times this value.', type=int,  default=300, metavar='N')	
 argParser.add_argument('-t', '--threshold', help='audio signal threshold at which recording starts after sending the record command', type=float,  default=0.05, metavar='N')	
 args = argParser.parse_args()
 
@@ -192,31 +206,30 @@ def process (frames):
 		midiInterface.executeMidiCmd (b2, b3)
 		
 	# record wav
-	b = looper.inport.get_array()
+	b = copy.deepcopy ( looper.inport.get_array() )
+	looper.buffer.append (b) # ring buffer
+	
 	curr_loop = looper.curr_loop
 	if looper.record_counter == 1:
 		if curr_loop.state != 'record' and max(b) > looper.record_treshhold:
 			curr_loop.state = 'record'
 			
-			curr_loop.head_buffer = list (looper.buffer)
+			curr_loop.head_buffer =  list (looper.buffer)
 			
-			if curr_loop != looper.sync_loop and len (curr_loop.sync_loop.curr_sample) > 0:
+			if not looper.isMaster (curr_loop) and len (looper.sync_loop.curr_sample) > 0:
 				# sync_samples should be empty list here
 				# TODO: test this line:
 				#curr_loop.sync_samples = [curr_loop.sync_loop.curr_sample]
-				curr_loop.sync_samples.append (curr_loop.sync_loop.curr_sample[0])
+				curr_loop.sync_samples.append (looper.sync_loop.curr_sample[0])
 			else:
 				for l in looper.getSlaveLoops():
 					if len (l.curr_sample) > 0:
-						l.sync_samples = [l.sync_loop.curr_sample[0]]
+						l.sync_samples = [looper.sync_loop.curr_sample[0]]
 						
 			curr_loop.log ('recording')
 		
 		if curr_loop.state == 'record':
 			curr_loop.setData (b)
-	
-		
-	looper.buffer.append (b) # ring buffer
 	
 	# record midi
 	if looper.midi_record:
@@ -247,22 +260,17 @@ def process (frames):
 					loop.samples = loop.samples + loop.tail_buffer
 					loop.log ('samples after add tail_buffer: %s' % len(loop.samples) )
 			
-			if loop == looper.sync_loop:
+			if looper.isMaster (loop):
 				if len (loop.curr_sample) == 0:
 					loop.addPlayInstance()
 					# for first play after record start loop from record start without playing the head_buffer
 					loop.curr_sample[0] = len (loop.head_buffer)
-				elif len (loop.curr_sample) == 1 and loop.curr_sample[0] >= len (loop.samples) - len (loop.tail_buffer) - len (loop.head_buffer):
-					loop.addPlayInstance()
-				
-			#if loop != looper.sync_loop and \
-			#   loop.isPlaying and \
-			#   len (loop.curr_sample) == 1 and len (loop.samples) - loop.curr_sample[0] <= len (loop.samples) / 10 and \
-			#   loop.sync_loop.curr_sample[0] in loop.sync_samples:
-			#	loop.addPlayInstance()
+				elif len (loop.curr_sample) == 1:
+					if loop.curr_sample[0] >= len (loop.samples) - ( len (loop.tail_buffer) if len (loop.tail_buffer) >= looper.buffer.maxlen else 0 ) - len (loop.head_buffer):
+						loop.addPlayInstance()
 			
-			add = False
-			if loop != looper.sync_loop:
+			else: # not looper.isMaster (loop):
+				add = False
 				for cs in looper.sync_loop.curr_sample:
 					if cs in loop.sync_samples:
 						print ('sample in sync_samples')
@@ -270,28 +278,22 @@ def process (frames):
 						add = True
 						break
 			
-			# add play instance right after recording without wait for the next cycle to start
-			if not add:
-				if loop != looper.sync_loop and len (loop.curr_sample) == 0:
-					for ss in reversed (loop.sync_samples):
-						for cs in looper.sync_loop.curr_sample:
-							if cs > ss:
-								loop.addPlayInstance()
-								loop.curr_sample[0] = cs - ss
-								print (1)
-								
-								break
+				# add play instance right after recording without wait for the next cycle to start
+				if not add:
+					if len (loop.curr_sample) == 0:
+						for ss in reversed (loop.sync_samples):
+							for cs in looper.sync_loop.curr_sample:
+								if cs > ss:
+									loop.addPlayInstance()
+									loop.curr_sample[0] = cs - ss
+									print (1)
+									
+									break
 			
-			#print (looper.sync_loop)
-			#print (looper.sync_loop.curr_sample)
-			#print (len(loop.sync_samples))
 			if loop == looper.sync_loop or \
 				len (loop.curr_sample) > 0 or \
 			   ( len (looper.sync_loop.curr_sample) > 0 and \
 			    looper.sync_loop.curr_sample[0] in loop.sync_samples ):
-				
-				#for cs in loop.curr_sample:
-				#	print ('loop ' + loop.name + ' curr sample: ' + str(cs))
 					
 				loop.isPlaying = loop.nextSample()
 				
@@ -305,12 +307,6 @@ def process (frames):
 		# midi play
 		for mt in loop.midi_tracks:
 			mt.midi_outport.clear_buffer()
-			
-			#print (mt.sync_sample)
-			#print (loop.curr_sample)
-			#print (len(loop.samples))
-			#print (len(mt.samples))
-			#print (mt.enabled)
 			
 			
 			#if mt.enabled and (mt.isPlaying or mt.sync_sample == loop.curr_sample):
@@ -341,7 +337,6 @@ if __name__ == '__main__':
 	with looper.jack_client:
 		looper.jack_client.activate()
 		while True:
-			
 			# test
 			#t1 = Loop ('master t1', looper.jack_client, 'master')
 			#t2 = Loop ('slave t2', looper.jack_client, t1)

@@ -10,13 +10,13 @@ midi_map = {
 	#61: 'select_prev_loop',
 	#62: 'select_next_loop',
 	
-	81: 'new_midi_track',
+	59: 'new_midi_track',
 	#58: 'select_prev_midi_track',
 	#59: 'select_next_midi_track',
 	
 	144: 'toggle_record',
 	#41: 'toggle_midi_track_mute',
-	145: 'toggle_record_midi',
+	58: 'toggle_record_midi',
 	
 	#60: 'toggle_sync_mode'
 	
