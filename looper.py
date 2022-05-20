@@ -41,6 +41,8 @@ class Looper:
 		self.syncManager = SyncManager()
 
 		self.midi_inport = self.jack_client.midi_inports.register ('midi_capture')
+		
+		self.debug = False
 	
 	def addLoop (self):
 		self.midi_record = False
@@ -52,7 +54,7 @@ class Looper:
 			self.addLoop()
 	
 	def deleteCurrLoop (self):
-		print ('delete loop %s' % self.curr_loop.name)
+		self.curr_loop ('delete')
 		self.midi_record = False
 		self.curr_loop.state = 'empty'
 		i = self.loops.index (self.curr_loop)
@@ -68,12 +70,12 @@ class Looper:
 				self.record_counter = 0
 			
 			self.curr_loop = self.loops[i]
-			print ('set curr_loop to ' + self.curr_loop.name)
+			self.curr_loop.log ('new current loop')
 			
 			if not self.isMaster (self.curr_loop) and len (self.sync_loop.samples) == 0:
 				self.set_sync_loop (self.curr_loop)
 		else:
-			print ('no such loop')
+			self.log ('warning: no such loop')
 	
 	def set_sync_loop (self, l):
 		self.sync_loop = l		
@@ -85,7 +87,7 @@ class Looper:
 		i = (i + 1) % len(self.loops)
 		self.curr_loop = self.loops[i]
 		self.record_counter = 0
-		print ('set curr_loop to ' + self.curr_loop.name)
+		self.curr_loop.log ('new current loop')
 		
 	def selectPrevLoop (self):
 		self.midi_record = False
@@ -93,7 +95,7 @@ class Looper:
 		i = (i - 1) % len(self.loops)
 		self.curr_loop = self.loops[i]
 		self.record_counter = 0
-		print ('set curr_loop to ' + self.curr_loop.name)
+		self.curr_loop.log ('new current loop')
 	
 	def toggleRecord (self):
 		if self.record_counter == 0 or ( self.record_mode == 'delete' and self.record_counter == 2 ):
@@ -137,11 +139,11 @@ class Looper:
 				self.curr_loop.state = 'wait'
 				self.curr_loop.curr_sample = []
 			elif self.record_counter % 2 == 1:
-				curr_loop.log ('playing')
+				self.curr_loop.log ('playing')
 				self.curr_loop.state = 'play'
 		
 		if self.record_counter == 0:
-			print ('waiting for treshold')
+			self.log ('waiting for treshold')
 		
 		if self.record_mode == 'default':
 			self.record_counter = (self.record_counter + 1) %  2
@@ -157,13 +159,13 @@ class Looper:
 		
 		if midi_track != None:
 			if not self.midi_record:
-				print ('start midi record')
+				self.curr_loop.log ('start midi record')
 				self.curr_loop.getCurrMidiTrack().isPlaying = False
 				self.curr_loop.getCurrMidiTrack().enabled = False
 				self.curr_loop.getCurrMidiTrack().samples = {}
 				self.curr_loop.getCurrMidiTrack().sync_sample = -1
 			else:
-				print ('end midi record')
+				self.curr_loop.log ('end midi record')
 				self.curr_loop.getCurrMidiTrack().enabled = True
 				
 			self.midi_record = not self.midi_record
@@ -177,6 +179,10 @@ class Looper:
 	
 	def isMaster (self, loop):
 		return self.sync_loop == loop
+	
+	def log (self, msg):
+		if self.debug:
+			print (msg)
 			
 
 argParser = argparse.ArgumentParser()
@@ -184,10 +190,12 @@ argParser.add_argument('-l', '--loops', default=8, metavar='N', type=int, help='
 argParser.add_argument('-i', '--input', help='toggle record on stdin input', action='store_true')	
 argParser.add_argument('-b', '--buffer', help='buffer size in milliseconds. Results in smooth transition between loop cycles. Higher values may leed to undesired results. Values higher than 500 do not make any sense. The minimum length of a loop has to longer than 2 times this value.', type=int,  default=300, metavar='N')	
 argParser.add_argument('-t', '--threshold', help='audio signal threshold at which recording starts after sending the record command', type=float,  default=0.05, metavar='N')	
+argParser.add_argument('-v', '--verbose', help='debugging mode',  action='store_true')	
 args = argParser.parse_args()
 
 looper = Looper (args.loops, args.buffer)
 looper.record_treshhold = args.threshold
+looper.debug = args.verbose
 midiInterface = MidiInterface (looper)
 
 @looper.jack_client.set_process_callback
@@ -267,7 +275,6 @@ def process (frames):
 				add = False
 				for cs in looper.sync_loop.curr_sample:
 					if cs in loop.sync_samples:
-						print ('sample in sync_samples')
 						loop.addPlayInstance()
 						add = True
 						break

@@ -36,7 +36,7 @@ class SyncManager:
 		
 		dists = {abs (qq - f): i for i, f in enumerate ([fractions[i][0] for i in range(len(fractions))])}
 		minq = dists[min(dists)]
-		print (( math.floor(q) + fractions[minq][0], fractions[minq][2]))
+		#print (( math.floor(q) + fractions[minq][0], fractions[minq][2]))
 		return ( math.floor(q) + fractions[minq][0], fractions[minq][2] )
 		
 		#for i in range(len(fractions)):
@@ -76,11 +76,11 @@ class SyncManager:
 	
 	def calc_sync_samples (self, master, current):
 		master_length = len(master.samples) - len(master.head_buffer) - len(master.tail_buffer)
-		print ('master_length: %s' % master_length)
+		#print ('master_length: %s' % master_length)
 		if len(current.samples) < master_length:
 			q = self.quantize ( master_length, len(current.samples), self.q_fractions )
-			print (self.q_fractions)
-			print (q)
+			#print (self.q_fractions)
+			#print (q)
 			length = q[0]
 			if length > 0 and length != 1:
 				for k in range(q[1] - 1):

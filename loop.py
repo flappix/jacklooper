@@ -150,11 +150,11 @@ class Loop:
 			self.wav2midi_track = len(self.midi_tracks) - 1
 			
 		self.curr_midi_track = len(self.midi_tracks) - 1
-		print ('add midi track %s' % self.getCurrMidiTrack().name)
+		self.log ('add midi track %s' % self.getCurrMidiTrack().name)
 	
 	def deleteMidiTrack (self, track):
 		try:
-			print ('delete midi track %s' % self.midi_tracks[track].name)
+			self.log ('delete midi track %s' % self.midi_tracks[track].name)
 			self.midi_tracks[track].midi_outport.unregister()
 			
 			if track == self.wav2midi_track:
@@ -182,14 +182,14 @@ class Loop:
 	def selectNextMidiTrack (self):
 		if len(self.midi_tracks) > 0:
 			self.curr_midi_track = (self.curr_midi_track + 1) % len(self.midi_tracks)
-			print ('select midi track %s' % self.getCurrMidiTrack().name)
+			self.log ('select midi track %s' % self.getCurrMidiTrack().name)
 		else:
 			self.curr_midi_track = -1
 			
 	def selectPrevMidiTrack (self):
 		if len(self.midi_tracks) > 0:
 			self.curr_midi_track = (self.curr_midi_track - 1) % len(self.midi_tracks)
-			print ('select midi track %s' % self.getCurrMidiTrack().name)
+			self.log ('select midi track %s' % self.getCurrMidiTrack().name)
 		else:
 			self.curr_midi_track = -1
 	
@@ -200,7 +200,7 @@ class Loop:
 		if mode in ['gap', 'contonius']:
 			self.sync_mode = mode
 		else:
-			print ('invalid sync mode %s' % str(mode))
+			self.log ('invalid sync mode %s' % str(mode))
 	
 	def toggleSyncMode (self):
 		self.curr_sync_mode = (self.curr_sync_mode + 1) % len(self.sync_modes)
@@ -235,7 +235,8 @@ class Loop:
 		
 	
 	def log (self, msg):
-		print ('loop ' + str(self.name) + (' (master) ' if self.looper.isMaster (self) else '') + ': ' + str(msg))
+		if self.looper.debug:
+			print ('loop ' + str(self.name) + (' (master) ' if self.looper.isMaster (self) else '') + ': ' + str(msg))
 
 class MidiTrack:
 	def __init__(self, _name, _loop, jack_client):
@@ -266,4 +267,4 @@ class MidiTrack:
 	
 	def toggleEnable (self):
 		self.enabled = not self.enabled
-		print ('midi track %s: %s' % (self.name, 'enabled' if self.enabled else 'disabled'))
+		self.loop.log ('midi track %s: %s' % (self.name, 'enabled' if self.enabled else 'disabled'))
