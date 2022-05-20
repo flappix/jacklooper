@@ -2,6 +2,7 @@ import struct
 from aubio import notes
 import numpy as np
 from MidiInterface import MidiInterface
+from midi_map import midi_map
 import time
 
 class Loop:
@@ -242,41 +243,27 @@ class Loop:
 class MidiTrack:
 	def __init__(self, _name, _loop, jack_client):
 		self.name = str(_name)
-		self.samples = []
-		self.curr_sample = -1
-		self.sync_sample = -1
+		self.samples = {}
 		self.loop = _loop
 		self.enabled = False
 		self.midi_outport = jack_client.midi_outports.register ( 'midi_out' + str (self.name) )
 		self.isPlaying = False
-	
-	def setDataFromMidi (self, data):
-		b1, b2, b3 = struct.unpack('3B', data)
 		
-		self.samples.append ( (b1, b2, b3) )
-		self.curr_sample += 1
+		self.midi_record_cmd = list ( midi_map.keys() )[list ( midi_map.values() ).index ('toggle_record_midi')]
 	
-	def copyLastSample (self):
-		if self.curr_sample != -1:
-			self.samples.append (self.samples[-1])
-			self.curr_sample += 1
+	def setDataFromMidi (self, data, sync_sample):
+		b1, b2, b3 = struct.unpack('3B', data)
+		if b2 != self.midi_record_cmd:
+			self.samples[sync_sample] = (b1, b2, b3)
 	
 	#def setDataFromAubio (self, data, frame):
 	#	self.samples[frame] = (144, data[0], 127)
 	#	self.curr_sample = frame
-	
-	def nextSample (self):
-		if len (self.loop.samples) > 0 and self.curr_sample < len (self.samples):
-			self.curr_sample += 1
-			return True
-		else:
-			self.curr_sample = -1
-			return False
 		
 	
-	def getData (self):
-		if len(self.samples) > 0 and self.curr_sample < len(self.samples):
-			return self.samples[self.curr_sample]
+	def getData (self, sync_sample):
+		if sync_sample in self.samples:
+			return self.samples[sync_sample]
 		
 		return None
 	

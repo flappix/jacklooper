@@ -160,7 +160,7 @@ class Looper:
 				print ('start midi record')
 				self.curr_loop.getCurrMidiTrack().isPlaying = False
 				self.curr_loop.getCurrMidiTrack().enabled = False
-				self.curr_loop.getCurrMidiTrack().samples = []
+				self.curr_loop.getCurrMidiTrack().samples = {}
 				self.curr_loop.getCurrMidiTrack().sync_sample = -1
 			else:
 				print ('end midi record')
@@ -233,19 +233,11 @@ def process (frames):
 	
 	# record midi
 	if looper.midi_record:
-		
-		any_input = False
 		for offset, data in looper.midi_inport.incoming_midi_events():
-			any_input = True
 			b1, b2, b3 = struct.unpack('3B', data)
 			if len(data) == 3:
-				curr_loop.getCurrMidiTrack().setDataFromMidi (data)
-				
-				if curr_loop.getCurrMidiTrack().sync_sample == -1:
-					curr_loop.getCurrMidiTrack().sync_sample = curr_loop.curr_sample[0]
-		
-		if not any_input and curr_loop.getCurrMidiTrack().sync_sample != -1:
-			curr_loop.getCurrMidiTrack().copyLastSample()
+				if len (curr_loop.curr_sample) > 0:
+					curr_loop.getCurrMidiTrack().setDataFromMidi (data, curr_loop.curr_sample[0])
 		
 	for loop in looper.loops:
 		
@@ -286,7 +278,6 @@ def process (frames):
 								if cs > ss:
 									loop.addPlayInstance()
 									loop.curr_sample[0] = cs - ss
-									print (1)
 									
 									break
 			
@@ -311,23 +302,9 @@ def process (frames):
 			
 			#if mt.enabled and (mt.isPlaying or mt.sync_sample == loop.curr_sample):
 			if mt.enabled:
-				play = True
-				### TODO: handle midi tracks which are longer than wav loop
-				if not mt.isPlaying:
-					if loop.curr_sample[0] >= mt.sync_sample and loop.curr_sample[0] - mt.sync_sample < len(mt.samples):	
-						mt.curr_sample = loop.curr_sample[0] - mt.sync_sample
-						play = True
-					elif loop.curr_sample[0] < mt.sync_sample and (len (loop.samples) - mt.sync_sample) + loop.curr_sample[0] < len(mt.samples):
-						play = True
-						mt.curr_sample = (len (loop.samples) - mt.sync_sample) + loop.curr_sample[0]
-					else:
-						play = False
-						#print ('not play')
-				
-				if play:
-					#print ('play midi')
-					mt.isPlaying = mt.nextSample()
-					data = mt.getData()
+				if len (loop.curr_sample) > 0:
+					### TODO: handle midi tracks which are longer than wav loop
+					data = mt.getData (loop.curr_sample[0])
 					if data != None:
 						#print ('write midi')
 						mt.midi_outport.write_midi_event (0, data)

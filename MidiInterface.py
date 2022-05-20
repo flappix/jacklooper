@@ -1,4 +1,4 @@
-from midi_map_rasperrylooper import midi_map
+from midi_map import midi_map
 
 class MidiInterface:
 	def __init__(self, looper):
@@ -82,8 +82,8 @@ class MidiInterface:
 					self.cmd_map[midi_map[cmd]]()
 			elif midi_map[cmd] in self.cmd_map_arg:
 				self.cmd_map_arg[midi_map[cmd]](arg)
-		else:
-			print (cmd, arg)
+		#else:
+		#	print (cmd, arg)
 	
 	def linearTrans (x1, x2, a, b, c):
 		return x1 + ((x2 - x1)/(b - a)) * (c - a)
