@@ -133,7 +133,7 @@ class Looper:
 		
 		elif self.record_mode == 'pause':
 			if self.record_counter % 2 == 0:
-				curr_loop.log ('pause')
+				self.curr_loop.log ('pause')
 				self.curr_loop.state = 'wait'
 				self.curr_loop.curr_sample = []
 			elif self.record_counter % 2 == 1:
@@ -240,15 +240,17 @@ def process (frames):
 					curr_loop.getCurrMidiTrack().setDataFromMidi (data, curr_loop.curr_sample[0])
 		
 	for loop in looper.loops:
-		
 		# wav play
 		playNullSample = True
 		if loop.state == 'play':
-			
 			# append tail_buffer if needed
 			if len (loop.tail_buffer) < len (looper.buffer):
 				loop.tail_buffer.append (b)
 				if len (loop.tail_buffer) >= len (looper.buffer):
+					
+					# fade out tail_buffer
+					loop.tail_buffer[:] = [loop.tail_buffer[i] * m for i, m in enumerate ( np.linspace ( 1, 0, num=len (loop.tail_buffer) ) )]
+						
 					loop.samples = loop.samples + loop.tail_buffer
 					loop.log ('samples after add tail_buffer: %s' % len(loop.samples) )
 			
@@ -291,12 +293,14 @@ def process (frames):
 					playNullSample = False
 				
 		if playNullSample:
-			loop.outport.get_array()[:] = null_sample
+			if not loop.grounded:
+				loop.outport.get_array()[:] = null_sample
+				loop.grounded = True
 		
 		# midi play
 		for mt in loop.midi_tracks:
 			mt.midi_outport.clear_buffer()
-			
+			loop.log ('mt process')
 			
 			#if mt.enabled and (mt.isPlaying or mt.sync_sample == loop.curr_sample):
 			if mt.enabled:

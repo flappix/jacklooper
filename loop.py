@@ -1,5 +1,5 @@
 import struct
-from aubio import notes
+#from aubio import notes
 import numpy as np
 from MidiInterface import MidiInterface
 from midi_map import midi_map
@@ -28,6 +28,8 @@ class Loop:
 		self.isPlaying = False
 		self.mute = False
 		
+		self.grounded = True # send one null-Sample after clear to ground and avoid strange noises
+		
 		self.sync_modes = ['continous', 'gap']
 		self.curr_sync_mode = 0
 
@@ -53,6 +55,10 @@ class Loop:
 		if len (self.samples) > 0:
 			self.log ('head_buffer: %s' % len(self.head_buffer))
 			self.log ('samples before buffer merge: %s' % len(self.samples))
+			
+			# fade in head_buffer
+			self.head_buffer[:] = [self.head_buffer[i] * m for i, m in enumerate ( np.linspace ( 0, 1, num=len (self.head_buffer) ) )]
+				
 			self.samples = self.head_buffer + self.samples
 			self.log ('samples after add head_buffer: %s' % len(self.samples))
 			
@@ -218,6 +224,7 @@ class Loop:
 		self.sync_samples = []
 		self.curr_sample = []
 		self.deleteAllMidiTracks()
+		self.grounded = False
 		
 		if self.looper.isMaster (self):
 			# turn first non-empty loop into master looper
