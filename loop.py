@@ -75,8 +75,8 @@ class Loop:
 		else:
 			self.state = 'empty'
 	
-	def addPlayInstance (self):
-		self.curr_sample += [-1]
+	def addPlayInstance (self, start=-1):
+		self.curr_sample += [start]
 		
 		self.log ('add play instance at')
 		if not self.looper.isMaster (self):
@@ -124,17 +124,7 @@ class Loop:
 	
 	def nextSample (self):
 		if len(self.samples) > 0:
-			
-			delete = []
-			for i in range(len(self.curr_sample)):
-				self.curr_sample[i] += 1
-			
-				if self.curr_sample[i] >= len (self.samples) - 1:
-					delete.append (i)
-			
-			for i in delete:
-				del self.curr_sample[i]
-			
+			self.curr_sample[:] = [i + 1 for i in self.curr_sample if i + 1 < len (self.samples) - 1 ]
 			return True
 			
 		else:

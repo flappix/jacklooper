@@ -276,9 +276,7 @@ def process (frames):
 						for ss in reversed (loop.sync_samples):
 							for cs in looper.sync_loop.curr_sample:
 								if cs > ss:
-									loop.addPlayInstance()
-									loop.curr_sample[0] = cs - ss
-									
+									loop.addPlayInstance (cs - ss)
 									break
 			
 			if loop == looper.sync_loop or \
