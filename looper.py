@@ -13,10 +13,13 @@ import time
 import collections
 #import multiprocessing as mp
 
+from utils import dist_ring
+
 class Looper:
 	
-	def __init__(self, num_loops=8, buffer_size=300):
+	def __init__(self, num_loops=8, buffer_size=300, deviation=0.6):
 		self.jack_client = jack.Client('Looper')
+		print (self.jack_client.blocksize)
 		self.inport = self.jack_client.inports.register ('in')
 
 		self.loops = [Loop ('0', self.jack_client, self)]
@@ -31,6 +34,7 @@ class Looper:
 		self.midi_record = False
 
 		self.record_treshhold = 0.05
+		self.deviation_samples = self.time2samples (deviation)
 		
 		# default	- press -> recording -> press -> playing -> press -> recording -> ...
 		# delete	- press -> recording -> press -> playing -> press -> delete    -> press -> recording -> press -> playing -> ...
@@ -43,6 +47,12 @@ class Looper:
 		self.midi_inport = self.jack_client.midi_inports.register ('midi_capture')
 		
 		self.debug = False
+	
+	def samples2time (self, n_samples : int):
+		return n_samples // self.jack_client.samplerate
+		
+	def time2samples (self, seconds):
+		return seconds * ( self.jack_client.samplerate / self.jack_client.blocksize )
 	
 	def addLoop (self):
 		self.midi_record = False
@@ -189,12 +199,14 @@ argParser = argparse.ArgumentParser()
 argParser.add_argument('-l', '--loops', default=8, metavar='N', type=int, help='create N initial loops, default=8')	
 argParser.add_argument('-i', '--input', help='toggle record on stdin input', action='store_true')	
 argParser.add_argument('-b', '--buffer', help='buffer size in milliseconds. Results in smooth transition between loop cycles. Higher values may leed to undesired results. Values higher than 500 do not make any sense. The minimum length of a loop has to longer than 2 times this value.', type=int,  default=300, metavar='N')	
+argParser.add_argument('-d', '--deviation', help='allowed unpreciseness in seconds', type=float,  default=0.6, metavar='N')	
 argParser.add_argument('-t', '--threshold', help='audio signal threshold at which recording starts after sending the record command', type=float,  default=0.05, metavar='N')	
 argParser.add_argument('-v', '--verbose', help='debugging mode',  action='store_true')	
 args = argParser.parse_args()
 
 looper = Looper (args.loops, args.buffer)
 looper.record_treshhold = args.threshold
+looper.deviation = args.deviation
 looper.debug = args.verbose
 midiInterface = MidiInterface (looper)
 
@@ -229,7 +241,7 @@ def process (frames):
 				# TODO: test this line:
 				#curr_loop.sync_samples = [curr_loop.sync_loop.curr_sample]
 				curr_loop.sync_samples.append (looper.sync_loop.curr_sample[0])
-			else:
+			else: # current recording loop is master
 				for l in looper.getSlaveLoops():
 					if len (l.curr_sample) > 0:
 						l.sync_samples = [looper.sync_loop.curr_sample[0]]
@@ -273,8 +285,9 @@ def process (frames):
 			
 			else: # not looper.isMaster (loop):
 				add = False
-				for cs in looper.sync_loop.curr_sample:
-					if cs in loop.sync_samples:
+				for cs in looper.sync_loop.curr_sample: # should be only 1 item
+					
+					if ( len (loop.curr_sample) == 0 or loop.curr_sample[-1] >= len (loop.samples) - len (loop.head_buffer) - looper.deviation_samples ) and cs in loop.sync_samples:
 						loop.addPlayInstance()
 						add = True
 						break
@@ -285,6 +298,7 @@ def process (frames):
 						for ss in reversed (loop.sync_samples):
 							for cs in looper.sync_loop.curr_sample:
 								if cs > ss:
+									loop.log ('start early play instance')
 									loop.addPlayInstance (cs - ss)
 									break
 			
@@ -319,7 +333,6 @@ def process (frames):
 						mt.midi_outport.write_midi_event (0, data)
 
 if __name__ == '__main__':
-	
 	with looper.jack_client:
 		looper.jack_client.activate()
 		while True:
@@ -338,6 +351,7 @@ if __name__ == '__main__':
 			#t2.stopRecord()
 			
 			if args.input:
+				print('press enter to toggle record')
 				input()
 				looper.toggleRecord()
 			
