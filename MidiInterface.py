@@ -43,11 +43,10 @@ class MidiInterface:
 			
 			'toggle_sync_mode': lambda: looper.curr_loop.toggleSyncMode(),
 			
-			'record_mode_default': lambda: looper.setRecordMode ('default'),
-			'record_mode_delete': lambda: looper.setRecordMode ('delete'),
-			'record_mode_pause': lambda: looper.setRecordMode ('pause'),
+			'clear_curr_loop': lambda: self.clear_curr_loop(),
+			'stop_curr_loop': lambda: looper.curr_loop.stop(),
 			
-			'clear_curr_loop': lambda: self.clear_curr_loop()
+			'drop_record': lambda: looper.dropRecording(),
 		}
 		
 		self.cmd_map_arg = {

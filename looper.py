@@ -83,6 +83,7 @@ class Looper:
 			self.curr_loop.log ('new current loop')
 			
 			if not self.isMaster (self.curr_loop) and len (self.sync_loop.samples) == 0:
+				print ('change sync loop')
 				self.set_sync_loop (self.curr_loop)
 		else:
 			self.log ('warning: no such loop')
@@ -95,24 +96,29 @@ class Looper:
 		self.midi_record = False
 		i = self.loops.index (self.curr_loop)
 		i = (i + 1) % len(self.loops)
-		self.curr_loop = self.loops[i]
-		self.record_counter = 0
-		self.curr_loop.log ('new current loop')
+		
+		self.setCurrLoop (i)
 		
 	def selectPrevLoop (self):
 		self.midi_record = False
 		i = self.loops.index (self.curr_loop)
 		i = (i - 1) % len(self.loops)
-		self.curr_loop = self.loops[i]
-		self.record_counter = 0
-		self.curr_loop.log ('new current loop')
+		self.setCurrLoop (i)
 	
 	def toggleRecord (self):
-		if self.record_counter == 0 or ( self.record_mode == 'delete' and self.record_counter == 2 ):
-			self.curr_loop.clear (self)
+		if self.record_counter == 0:
+			if self.curr_loop.state == 'play':
+				self.curr_loop.stop()
 			
 		elif self.record_counter == 1:
 			self.curr_loop.log ('stop recording')
+			
+			self.curr_loop.applyRecord() # copy temp samples to real samples
+			
+			if looper.isMaster (self.curr_loop):
+				for l in self.getSlaveLoops():
+					if len (l.curr_sample) > 0:
+						l.sync_samples = [looper.sync_loop.curr_sample[0]]
 			
 			if len (self.curr_loop.samples) >= self.buffer.maxlen * 2:
 				if self.curr_loop != self.sync_loop:
@@ -135,34 +141,12 @@ class Looper:
 				self.curr_loop.state = 'empty'
 			
 			
-			
-			## after executing the midi track has wrong names
-			#p = mp.Process(target=self.curr_loop.convertWav2Midi)
-			#p.start()
-			#
-			#self.curr_loop.convertWav2Midi()
 	
-		
-		elif self.record_mode == 'pause':
-			if self.record_counter % 2 == 0:
-				self.curr_loop.log ('pause')
-				self.curr_loop.state = 'wait'
-				self.curr_loop.curr_sample = []
-			elif self.record_counter % 2 == 1:
-				self.curr_loop.log ('playing')
-				self.curr_loop.state = 'play'
-		
-		if self.record_counter == 0:
-			self.log ('waiting for treshold')
-		
-		if self.record_mode == 'default':
-			self.record_counter = (self.record_counter + 1) %  2
-		elif self.record_mode == 'delete':
-			self.record_counter = (self.record_counter + 1) %  3
-		elif self.record_mode == 'pause':
-			self.record_counter += 1
-		
+		self.record_counter = (self.record_counter + 1) %  2
 			
+	def dropRecording (self):
+		self.record_counter = 0
+		self.curr_loop.dropRecording()
 	
 	def toggleRecordMidi (self):
 		midi_track = self.curr_loop.getCurrMidiTrack()
@@ -234,17 +218,14 @@ def process (frames):
 		if curr_loop.state != 'record' and max(b) > looper.record_treshhold:
 			curr_loop.state = 'record'
 			
-			curr_loop.head_buffer =  list (looper.buffer)
+			# faid in head buffer
+			curr_loop.temp_head_buffer = looper.buffer
 			
 			if not looper.isMaster (curr_loop) and len (looper.sync_loop.curr_sample) > 0:
 				# sync_samples should be empty list here
 				# TODO: test this line:
 				#curr_loop.sync_samples = [curr_loop.sync_loop.curr_sample]
-				curr_loop.sync_samples.append (looper.sync_loop.curr_sample[0])
-			else: # current recording loop is master
-				for l in looper.getSlaveLoops():
-					if len (l.curr_sample) > 0:
-						l.sync_samples = [looper.sync_loop.curr_sample[0]]
+				curr_loop.temp_sync_samples.append (looper.sync_loop.curr_sample[0])
 						
 			curr_loop.log ('recording')
 		
@@ -266,6 +247,9 @@ def process (frames):
 			# append tail_buffer if needed
 			if len (loop.tail_buffer) < len (looper.buffer):
 				loop.tail_buffer.append (b)
+				loop.log (f'{loop.state=}')
+				loop.log (f'{len (loop.tail_buffer)=}')
+				loop.log (f'{len (looper.buffer)=}')
 				if len (loop.tail_buffer) >= len (looper.buffer):
 					
 					# fade out tail_buffer
@@ -280,7 +264,7 @@ def process (frames):
 					# for first play after record start loop from record start without playing the head_buffer
 					loop.curr_sample[0] = len (loop.head_buffer)
 				elif len (loop.curr_sample) == 1:
-					if loop.curr_sample[0] >= len (loop.samples) - ( len (loop.tail_buffer) if len (loop.tail_buffer) >= looper.buffer.maxlen else 0 ) - len (loop.head_buffer):
+					if loop.curr_sample[0] >= len (loop.samples) - len (loop.tail_buffer) - len (loop.head_buffer):
 						loop.addPlayInstance()
 			
 			else: # not looper.isMaster (loop):
@@ -315,13 +299,13 @@ def process (frames):
 				
 		if playNullSample:
 			if not loop.grounded:
+				loop.log ('grounding')
 				loop.outport.get_array()[:] = null_sample
 				loop.grounded = True
 		
 		# midi play
 		for mt in loop.midi_tracks:
 			mt.midi_outport.clear_buffer()
-			loop.log ('mt process')
 			
 			#if mt.enabled and (mt.isPlaying or mt.sync_sample == loop.curr_sample):
 			if mt.enabled:

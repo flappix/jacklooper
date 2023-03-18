@@ -8,12 +8,15 @@ import time
 class Loop:
 	def __init__(self, _name, _jack_client, _looper):
 		self.name = str(_name)
-		self.samples = np.array ([])
+		self.samples = []
+		self.temp_samples = [] # recording go to this and will be copies to samples after recording
 		self.curr_sample = []
 		self.head_buffer = []
+		self.temp_head_buffer = []
 		self.tail_buffer = []
 		
 		self.volume = 1
+		self.fade_volume = []
 		
 		self.midi_tracks = []
 		self.curr_midi_track = -1
@@ -24,30 +27,55 @@ class Loop:
 		
 		self.looper = _looper
 		self.sync_samples = []
+		self.temp_sync_samples = []
 		self.state = 'empty' # empty, wait, record, play
 		self.isPlaying = False
 		self.mute = False
+		self.stopping = False
 		
 		self.grounded = True # send one null-Sample after clear to ground and avoid strange noises
 		
 		self.sync_modes = ['continous', 'gap']
 		self.curr_sync_mode = 0
 
-	def setData (self, data, pos=None, playInstance=0):
+	def setData (self, data, pos=None):
 		if pos == None:
-			#self.samples = np.append ( self.samples, copy.deepcopy (data) )
-			self.samples.append (data)
-			#self.curr_sample[playInstance] += 1
+			self.temp_samples.append (data)
 		else:
-			self.samples[pos] = data
+			self.temp_samples[pos] = data
 	
 	def getData (self, frames):
+		if self.stopping:
+			if len(self.fade_volume) == 0:
+				self.curr_sample = []
+				self.state = 'wait'
+				self.grounded = False
+				self.stopping = False
+				print(1)
+				return [0] * frames
+				
 		if len(self.samples) > 0:
-			
-			return sum ([np.multiply (self.samples[s], self.volume) for s in self.curr_sample])
-			#return [s * self.volume for s in self.samples[self.curr_sample]] # !!! test
+			volume = self.volume
+			# fade out when loop is stopped (paused)
+			if len(self.fade_volume) > 0:
+				volume = self.fade_volume[0]
+				self.fade_volume.pop (0)
+
+			return sum ([np.multiply (self.samples[s], volume) for s in self.curr_sample])
 		
 		return [0] * frames
+	
+	def applyRecord (self):
+		self.clear()
+		
+		self.samples = self.temp_samples
+		self.temp_samples = []
+		
+		self.sync_samples = self.temp_sync_samples
+		self.temp_sync_samples = []
+		
+		self.head_buffer = self.temp_head_buffer
+		self.temp_head_buffer = []
 	
 	def stopRecord (self):
 		self.curr_sample = []
@@ -57,7 +85,7 @@ class Loop:
 			self.log ('samples before buffer merge: %s' % len(self.samples))
 			
 			# fade in head_buffer
-			self.head_buffer[:] = [self.head_buffer[i] * m for i, m in enumerate ( np.linspace ( 0, 1, num=len (self.head_buffer) ) )]
+			self.head_buffer = [self.head_buffer[i] * m for i, m in enumerate ( np.linspace ( 0, 1, num=len (self.head_buffer) ) )]
 				
 			self.samples = self.head_buffer + self.samples
 			self.log ('samples after add head_buffer: %s' % len(self.samples))
@@ -81,6 +109,16 @@ class Loop:
 		else:
 			self.state = 'empty'
 	
+	def dropRecording (self):
+		self.temp_samples = []
+		self.temp_sync_samples = []
+		
+		if len (self.samples) > 0:
+			self.state = 'play'
+		else:
+			self.state = 'empty'
+		
+	
 	def addPlayInstance (self, start=-1):
 		self.curr_sample += [start]
 		
@@ -90,6 +128,16 @@ class Loop:
 				self.looper.sync_loop.log ('curr_sample[%s]: %s' % (i, cs))
 		for i, cs in enumerate (self.curr_sample):
 			self.log ('curr_sample[%s]: %s' % (i, cs))
+	
+	def stop (self):
+		self.log ('pause')
+		# not working
+		#self.stopping = True
+		#self.fade_volume = list ( np.linspace (1, 0, 5) )
+		
+		self.state = 'wait'
+		self.curr_sample = []
+		self.grounded = False
 	
 	def getCurrMidiTrack (self):
 		if self.curr_midi_track != -1:
@@ -210,27 +258,28 @@ class Loop:
 	
 	def setVolume (self, volume):
 		# logarithmic: n^4 / 140000000 maps from 0 to ~1.85
-		v =  MidiInterface.linearTrans (0, 2, 0, 127, volume) 
+		v = MidiInterface.linearTrans (0, 2, 0, 127, volume) 
 		if v >= 0 and v <= 1:
 			self.volume = v
 		
 	
-	def clear (self, looper):
+	def clear (self):
 		self.log ('cleared')
 		self.state = 'empty'
 		self.samples = []
+		#self.temp_samples = []
 		self.head_buffer = []
 		self.tail_buffer = []
 		self.sync_samples = []
 		self.curr_sample = []
 		self.deleteAllMidiTracks()
 		self.grounded = False
-		
+	
 		if self.looper.isMaster (self):
 			# turn first non-empty loop into master looper
-			for l in looper.loops:
+			for l in self.looper.loops:
 				if len (l.samples) > 0:
-					looper.set_sync_loop (l)
+					self.looper.set_sync_loop (l)
 					break
 		
 	
